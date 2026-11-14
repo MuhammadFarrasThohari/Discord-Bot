@@ -1,0 +1,103 @@
+// use prisma-8
+model Artwork {
+  id              Int               @id @default(autoincrement())
+  source          String
+  sourceId        String
+  title           String?
+  fileUrl         String
+  previewUrl      String?
+  sampleUrl       String?
+  rating          String
+  fileExt         String?
+  fileSize        Int?
+  score           Int               @default(0)
+  favoriteCount   Int               @default(0)
+  tagString       String?
+  isDeleted       Boolean           @default(false)
+  isPending       Boolean           @default(false)
+  sourceCreatedAt DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @onUpdate(now())
+
+  deliveryHistory DeliveryHistory[]
+
+  @@unique([source, sourceId])
+  @@index([rating])
+  @@index([score])
+}
+
+model DiscordUser {
+  id              Int               @id @default(autoincrement())
+  discordId       String            @unique
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @onUpdate(now())
+
+  characters      UserCharacter[]
+  deliveryHistory DeliveryHistory[]
+}
+
+model Character {
+  id          Int             @id @default(autoincrement())
+  name        String
+  danbooruTag String          @unique
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @onUpdate(now())
+
+  users       UserCharacter[]
+}
+
+model UserCharacter {
+  id          Int                 @id @default(autoincrement())
+  userId      Int
+  characterId Int
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @onUpdate(now())
+
+  user        DiscordUser         @relation(fields: [userId], references: [id])
+  character   Character           @relation(fields: [characterId], references: [id])
+  schedules   CharacterSchedule[]
+
+  @@unique([userId, characterId])
+  @@index([userId, isActive])
+}
+
+model CharacterSchedule {
+  id              Int           @id @default(autoincrement())
+  userCharacterId Int
+  dayOfWeek       Int
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @onUpdate(now())
+
+  userCharacter   UserCharacter @relation(fields: [userCharacterId], references: [id])
+
+  @@unique([userCharacterId, dayOfWeek])
+  @@index([dayOfWeek, isActive])
+}
+
+model DeliveryHistory {
+  id          Int          @id @default(autoincrement())
+  userId      Int?
+  artworkId   Int
+  channelId   String
+  messageId   String
+  deliveredAt DateTime     @default(now())
+
+  user        DiscordUser? @relation(fields: [userId], references: [id])
+  artwork     Artwork      @relation(fields: [artworkId], references: [id])
+
+  @@unique([userId, artworkId])
+  @@index([userId, deliveredAt])
+}
+
+model GuildConfig {
+  id                Int      @id @default(autoincrement())
+  guildId           String   @unique
+  deliveryChannelId String
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @onUpdate(now())
+}

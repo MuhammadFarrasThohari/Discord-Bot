@@ -1,0 +1,30 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "commands:register": "tsx src/scripts/register-commands.ts",
+    "deploy:commands": "tsx src/deploy-commands.ts",
+    "postinstall": "prisma skills sync || exit 0",
+    "contract:emit": "prisma contract emit"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.1",
+    "@prisma/orm-postgres": "^8.0.0-rc.23",
+    "axios": "^1.21.1",
+    "discord.js": "^14.27.0",
+    "dotenv": "^16.6.1",
+    "node-cron": "^4.6.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@prisma/cli-engine": "^0.9.0",
+    "@types/node": "^24.0.0",
+    "prisma": "^8.0.0-rc.33",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0"
+  }
+}
