@@ -11,7 +11,7 @@ export async function fetchSfwArtworks({
   tags,
   page = 1,
 }: FetchArtworkOptions): Promise<DanbooruPost[]> {
-  const queryTags = [...tags, "rating:g", "order:date"].join(" ");
+  const queryTags = [...tags, "rating:g", "chartags:1"].join(" ");
 
   const posts = await getDanbooruPosts({
     tags: queryTags,

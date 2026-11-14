@@ -7,12 +7,15 @@ import {
 } from "discord.js";
 
 import { getDeliveryChannel } from "../guild-config/guild-config.service";
+import { db } from "../../prisma/db";
 
 import {
   getScheduledCharactersForDay,
   findArtworkBySourceId,
   hasUserReceivedArtwork,
   createDeliveryHistory,
+  getScheduledCharactersForUser,
+  getUserDeliveryForDate,
 } from "./delivery.repository";
 
 import { fetchSfwArtworks } from "../../integrations/danbooru/danbooru.service";
@@ -77,10 +80,7 @@ async function ensureThreadUsable(thread: ThreadChannel) {
     await thread.setArchived(false);
     console.log(`[DELIVERY] Successfully unarchived thread ${thread.id}.`);
   } catch (error) {
-    console.error(
-      `[DELIVERY] Failed to unarchive thread ${thread.id}:`,
-      error,
-    );
+    console.error(`[DELIVERY] Failed to unarchive thread ${thread.id}:`, error);
 
     throw new Error("Unable to unarchive the configured delivery thread.");
   }
@@ -127,12 +127,8 @@ async function getConfiguredDeliveryChannel(client: Client) {
 }
 
 async function deliverToUser(
-  target: Awaited<
-    ReturnType<typeof getScheduledCharactersForDay>
-  >[number],
-  channel: Awaited<
-    ReturnType<typeof getConfiguredDeliveryChannel>
-  >,
+  target: Awaited<ReturnType<typeof getScheduledCharactersForDay>>[number],
+  channel: Awaited<ReturnType<typeof getConfiguredDeliveryChannel>>,
 ) {
   const characters = shuffle(target.characters);
 
@@ -168,18 +164,13 @@ async function deliverToUser(
           artwork = await saveDanbooruArtwork(post);
         }
       } catch (error) {
-        console.error(
-          `[DELIVERY] Failed to save artwork ${post.id}:`,
-          error,
-        );
+        console.error(`[DELIVERY] Failed to save artwork ${post.id}:`, error);
 
         continue;
       }
 
       if (!artwork) {
-        console.error(
-          `[DELIVERY] Artwork ${post.id} could not be retrieved.`,
-        );
+        console.error(`[DELIVERY] Artwork ${post.id} could not be retrieved.`);
 
         continue;
       }
@@ -229,9 +220,7 @@ async function deliverToUser(
           messageId: message.id,
         });
 
-        console.log(
-          `[DELIVERY] Sent ${character.name} to ${target.discordId}`,
-        );
+        console.log(`[DELIVERY] Sent ${character.name} to ${target.discordId}`);
 
         return true;
       } catch (error) {
@@ -247,9 +236,7 @@ async function deliverToUser(
     }
   }
 
-  console.log(
-    `[DELIVERY] No available artwork for ${target.discordId}`,
-  );
+  console.log(`[DELIVERY] No available artwork for ${target.discordId}`);
 
   return false;
 }
@@ -263,9 +250,7 @@ export async function deliverDailyArtworks(client: Client) {
   // Get all users with active schedules for today.
   const targets = await getScheduledCharactersForDay(dayOfWeek);
 
-  console.log(
-    `[DELIVERY] Starting delivery for ${targets.length} users`,
-  );
+  console.log(`[DELIVERY] Starting delivery for ${targets.length} users`);
 
   const results = {
     total: targets.length,
@@ -277,6 +262,13 @@ export async function deliverDailyArtworks(client: Client) {
   // Process users sequentially to avoid sending too many messages at once.
   for (const target of targets) {
     try {
+      const existingDelivery = await getExistingDailyDelivery(target.userId);
+
+      if (existingDelivery) {
+        results.skipped++;
+        continue;
+      }
+
       const delivered = await deliverToUser(target, channel);
 
       if (delivered) {
@@ -287,14 +279,108 @@ export async function deliverDailyArtworks(client: Client) {
     } catch (error) {
       results.failed++;
 
-      console.error(
-        `[DELIVERY] Failed for ${target.discordId}:`,
-        error,
-      );
+      console.error(`[DELIVERY] Failed for ${target.discordId}:`, error);
     }
   }
 
   console.log("[DELIVERY] Finished:", results);
 
   return results;
+}
+
+function getJakartaDateRange() {
+  const now = new Date();
+
+  // Convert current time to Jakarta's UTC+7.
+  const jakartaNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
+  // Start of the current Jakarta calendar day, converted back to UTC.
+  const startOfDay = new Date(
+    Date.UTC(
+      jakartaNow.getUTCFullYear(),
+      jakartaNow.getUTCMonth(),
+      jakartaNow.getUTCDate(),
+    ) -
+      7 * 60 * 60 * 1000,
+  );
+
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+  return { startOfDay, endOfDay };
+}
+
+async function getExistingDailyDelivery(userId: number) {
+  const { startOfDay, endOfDay } = getJakartaDateRange();
+
+  return getUserDeliveryForDate(userId, startOfDay, endOfDay);
+}
+
+function createMessageUrl(
+  guildId: string,
+  channelId: string,
+  messageId: string,
+) {
+  return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
+}
+
+export type DeliverTodayResult =
+  | {
+      status: "already-delivered";
+      messageUrl: string;
+    }
+  | {
+      status: "no-schedule";
+    }
+  | {
+      status: "delivered";
+    }
+  | {
+      status: "no-artwork";
+    };
+
+export async function deliverTodayArtwork(
+  client: Client,
+  discordId: string,
+  guildId: string,
+): Promise<DeliverTodayResult> {
+  const user = await db.orm.public.DiscordUser.where({
+    discordId,
+    isActive: true,
+  }).first();
+
+  if (!user) {
+    return { status: "no-schedule" };
+  }
+
+  // Check daily cooldown first.
+  const existingDelivery = await getExistingDailyDelivery(user.id);
+
+  if (existingDelivery) {
+    return {
+      status: "already-delivered",
+      messageUrl: createMessageUrl(
+        guildId,
+        existingDelivery.channelId,
+        existingDelivery.messageId,
+      ),
+    };
+  }
+
+  const dayOfWeek = getJakartaDayOfWeek();
+
+  const target = await getScheduledCharactersForUser(discordId, dayOfWeek);
+
+  if (!target || target.characters.length === 0) {
+    return { status: "no-schedule" };
+  }
+
+  const channel = await getConfiguredDeliveryChannel(client);
+
+  const delivered = await deliverToUser(target, channel);
+
+  if (!delivered) {
+    return { status: "no-artwork" };
+  }
+
+  return { status: "delivered" };
 }

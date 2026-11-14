@@ -7,5 +7,5 @@ export const waifuCommand = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("today")
-      .setDescription("Show your scheduled characters for today"),
+      .setDescription("Get your daily waifu artwork"),
   );

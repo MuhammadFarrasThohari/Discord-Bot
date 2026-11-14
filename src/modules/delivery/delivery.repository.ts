@@ -1,4 +1,3 @@
-
 import { db } from "../../prisma/db";
 
 export interface ScheduledDeliveryTarget {
@@ -106,4 +105,66 @@ export async function createDeliveryHistory(data: {
   messageId: string;
 }) {
   return db.orm.public.DeliveryHistory.create(data);
+}
+
+export async function getScheduledCharactersForUser(
+  discordId: string,
+  dayOfWeek: number,
+): Promise<ScheduledDeliveryTarget | null> {
+  const user = await db.orm.public.DiscordUser.where({
+    discordId,
+    isActive: true,
+  }).first();
+
+  if (!user) return null;
+
+  const userCharacters = await db.orm.public.UserCharacter.where({
+    userId: user.id,
+    isActive: true,
+  }).all();
+
+  const characters = await Promise.all(
+    userCharacters.map(async (userCharacter) => {
+      const schedule = await db.orm.public.CharacterSchedule.where({
+        userCharacterId: userCharacter.id,
+        dayOfWeek,
+        isActive: true,
+      }).first();
+
+      if (!schedule) return null;
+
+      const character = await db.orm.public.Character.where({
+        id: userCharacter.characterId,
+        isActive: true,
+      }).first();
+
+      if (!character) return null;
+
+      return {
+        id: character.id,
+        name: character.name,
+        danbooruTag: character.danbooruTag,
+      };
+    }),
+  );
+
+  return {
+    userId: user.id,
+    discordId: user.discordId,
+    characters: characters.filter(
+      (character): character is NonNullable<typeof character> =>
+        character !== null,
+    ),
+  };
+}
+
+export async function getUserDeliveryForDate(
+  userId: number,
+  startOfDay: Date,
+  endOfDay: Date,
+) {
+  return db.orm.public.DeliveryHistory.where({ userId })
+    .where((history) => history.deliveredAt.gte(startOfDay))
+    .where((history) => history.deliveredAt.lt(endOfDay))
+    .first();
 }
