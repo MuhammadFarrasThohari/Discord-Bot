@@ -131,6 +131,7 @@ async function deliverToUser(
   channel: Awaited<ReturnType<typeof getConfiguredDeliveryChannel>>,
 ) {
   const characters = shuffle(target.characters);
+  let message = [];
 
   for (const character of characters) {
     let posts;
@@ -154,8 +155,8 @@ async function deliverToUser(
     for (const post of candidates) {
       if (!post.file_url) continue;
 
-      // Find or save artwork.
       let artwork;
+      // Find or save artwork.
 
       try {
         artwork = await findArtworkBySourceId(String(post.id));
@@ -204,41 +205,51 @@ async function deliverToUser(
         });
 
       try {
-        const message = await channel.send({
-          content: `✨ Daily Waifu for <@${target.discordId}>!`,
-          embeds: [embed],
-          allowedMentions: {
-            users: [target.discordId],
+        // Build the message
+        message.push({
+          character: character,
+          artwork: artwork,
+          content: {
+            content: `✨ Daily Waifu for <@${target.discordId}>!`,
+            embeds: [embed],
+            allowedMentions: {
+              users: [target.discordId],
+            },
           },
         });
-
-        // Save delivery history only after successful delivery.
-        await createDeliveryHistory({
-          userId: target.userId,
-          artworkId: artwork.id,
-          channelId: message.channelId,
-          messageId: message.id,
-        });
-
-        console.log(`[DELIVERY] Sent ${character.name} to ${target.discordId}`);
-
-        return true;
       } catch (error) {
         console.error(
           `[DELIVERY] Failed to send artwork ${post.id} to ${target.discordId}:`,
           error,
         );
-
-        // Do not try another artwork after a send/history error.
-        // The message may already have been sent successfully.
-        throw error;
       }
+      break; // Stop after one artwork for this character.
     }
   }
 
-  console.log(`[DELIVERY] No available artwork for ${target.discordId}`);
+  for (const msg of message) {
+    try {
+      const sentMessage = await channel.send(msg.content);
 
-  return false;
+      await createDeliveryHistory({
+        userId: target.userId,
+        artworkId: msg.artwork.id,
+        channelId: sentMessage.channel.id,
+        messageId: sentMessage.id,
+      });
+
+      console.log(
+        `[DELIVERY] Successfully sent message for ${msg.character.name} to ${target.discordId}`,
+      );
+    } catch (error) {
+      console.error(
+        `[DELIVERY] Failed to send message for ${msg.character.name} to ${target.discordId}:`,
+        error,
+      );
+    }
+  }
+
+  return message.length > 0;
 }
 
 export async function deliverDailyArtworks(client: Client) {

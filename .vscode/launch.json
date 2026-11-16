@@ -1,0 +1,36 @@
+
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Test",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--import",
+        "tsx",
+        "--test"
+      ],
+      "program": "${workspaceFolder}/${input:testFile}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "testFile",
+      "type": "pickString",
+      "description": "Select test file",
+      "options": [
+        "src/test/collector.test.ts",
+        "src/test/deliveries.test.ts",
+        "src/test/discord-client.test.ts",
+        
+      ]
+    }
+  ]
+}

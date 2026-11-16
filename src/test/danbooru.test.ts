@@ -1,7 +1,7 @@
 import "dotenv/config";
 
-import { collectDanbooruArtworks } from "./modules/artwork/artwork.service";
-import { db } from "./prisma/db";
+import { collectDanbooruArtworks } from "../modules/artwork/artwork.service";
+import { db } from "../prisma/db";
 
 async function main() {
   try {
