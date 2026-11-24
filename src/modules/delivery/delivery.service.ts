@@ -1,10 +1,4 @@
-import {
-  Client,
-  ChannelType,
-  EmbedBuilder,
-  PermissionFlagsBits,
-  ThreadChannel,
-} from "discord.js";
+import { Client, ChannelType, EmbedBuilder, PermissionFlagsBits, ThreadChannel } from "discord.js";
 
 import { getDeliveryChannel } from "../guild-config/guild-config.service";
 import { db } from "../../prisma/db";
@@ -60,9 +54,7 @@ function getJakartaDayOfWeek(): number {
 
 async function ensureThreadUsable(thread: ThreadChannel) {
   if (thread.locked) {
-    throw new Error(
-      "Configured delivery thread is locked. Please unlock it first.",
-    );
+    throw new Error("Configured delivery thread is locked. Please unlock it first.");
   }
 
   if (!thread.archived) return;
@@ -71,9 +63,7 @@ async function ensureThreadUsable(thread: ThreadChannel) {
   const permissions = thread.permissionsFor(botMember);
 
   if (!permissions?.has(PermissionFlagsBits.ManageThreads)) {
-    throw new Error(
-      "Bot needs Manage Threads permission to unarchive the delivery thread.",
-    );
+    throw new Error("Bot needs Manage Threads permission to unarchive the delivery thread.");
   }
 
   try {
@@ -96,17 +86,13 @@ async function getConfiguredDeliveryChannel(client: Client) {
   const config = await getDeliveryChannel(guildId);
 
   if (!config) {
-    throw new Error(
-      `Delivery channel has not been configured for guild ${guildId}.`,
-    );
+    throw new Error(`Delivery channel has not been configured for guild ${guildId}.`);
   }
 
   const channel = await client.channels.fetch(config.deliveryChannelId);
 
   if (!channel || !("guildId" in channel) || channel.guildId !== guildId) {
-    throw new Error(
-      "Configured delivery destination is invalid or no longer accessible.",
-    );
+    throw new Error("Configured delivery destination is invalid or no longer accessible.");
   }
 
   if (channel.isThread()) {
@@ -114,16 +100,11 @@ async function getConfiguredDeliveryChannel(client: Client) {
     return channel;
   }
 
-  if (
-    channel.type === ChannelType.GuildText ||
-    channel.type === ChannelType.GuildAnnouncement
-  ) {
+  if (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement) {
     return channel;
   }
 
-  throw new Error(
-    "Configured delivery destination is not a supported text channel or thread.",
-  );
+  throw new Error("Configured delivery destination is not a supported text channel or thread.");
 }
 
 async function deliverToUser(
@@ -135,22 +116,20 @@ async function deliverToUser(
 
   for (const character of characters) {
     let posts;
-
+    console.log(`[DELIVERY] for ${character.name}`);
     try {
       posts = await fetchSfwArtworks({
         tags: [character.danbooruTag],
         page: 1,
       });
     } catch (error) {
-      console.error(
-        `[DELIVERY] Failed to fetch artwork for ${character.name}:`,
-        error,
-      );
+      console.error(`[DELIVERY] Failed to fetch artwork for ${character.name}:`, error);
 
       continue;
     }
 
     const candidates = shuffle(posts);
+    console.log(`[DELIVERY] candidate found ${candidates.length}`);
 
     for (const post of candidates) {
       if (!post.file_url) continue;
@@ -180,10 +159,7 @@ async function deliverToUser(
       let alreadyDelivered: boolean;
 
       try {
-        alreadyDelivered = await hasUserReceivedArtwork(
-          target.userId,
-          artwork.id,
-        );
+        alreadyDelivered = await hasUserReceivedArtwork(target.userId, artwork.id);
       } catch (error) {
         console.error(
           `[DELIVERY] Failed to check delivery history for artwork ${artwork.id}:`,
@@ -307,11 +283,7 @@ function getJakartaDateRange() {
 
   // Start of the current Jakarta calendar day, converted back to UTC.
   const startOfDay = new Date(
-    Date.UTC(
-      jakartaNow.getUTCFullYear(),
-      jakartaNow.getUTCMonth(),
-      jakartaNow.getUTCDate(),
-    ) -
+    Date.UTC(jakartaNow.getUTCFullYear(), jakartaNow.getUTCMonth(), jakartaNow.getUTCDate()) -
       7 * 60 * 60 * 1000,
   );
 
@@ -326,11 +298,7 @@ async function getExistingDailyDelivery(userId: number) {
   return getUserDeliveryForDate(userId, startOfDay, endOfDay);
 }
 
-function createMessageUrl(
-  guildId: string,
-  channelId: string,
-  messageId: string,
-) {
+function createMessageUrl(guildId: string, channelId: string, messageId: string) {
   return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
 }
 
@@ -369,11 +337,7 @@ export async function deliverTodayArtwork(
   if (existingDelivery) {
     return {
       status: "already-delivered",
-      messageUrl: createMessageUrl(
-        guildId,
-        existingDelivery.channelId,
-        existingDelivery.messageId,
-      ),
+      messageUrl: createMessageUrl(guildId, existingDelivery.channelId, existingDelivery.messageId),
     };
   }
 
