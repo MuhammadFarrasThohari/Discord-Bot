@@ -11,7 +11,7 @@ export async function fetchSfwArtworks({
   tags,
   page = 1,
 }: FetchArtworkOptions): Promise<DanbooruPost[]> {
-  const queryTags = [...tags, "rating:g", "chartags:1"].join(" ");
+  const queryTags = [...tags, "rating:g", "solo"].join(" ");
 
   const posts = await getDanbooruPosts({
     tags: queryTags,
@@ -19,13 +19,12 @@ export async function fetchSfwArtworks({
     page,
   });
 
+  if (posts.length == 0) {
+    throw new Error();
+  }
+
   return posts.filter((post) => {
-    return (
-      post.rating === "g" &&
-      !post.is_deleted &&
-      !post.is_pending &&
-      Boolean(post.file_url)
-    );
+    return post.rating === "g" && !post.is_deleted && !post.is_pending && Boolean(post.file_url);
   });
 }
 
@@ -64,10 +63,7 @@ export async function validateDanbooruCharacterTag(tagName: string) {
 
     return tag;
   } catch (error) {
-    if (
-      error instanceof DanbooruTagNotFoundError ||
-      error instanceof InvalidDanbooruTagError
-    ) {
+    if (error instanceof DanbooruTagNotFoundError || error instanceof InvalidDanbooruTagError) {
       throw error;
     }
 
