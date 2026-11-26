@@ -4,10 +4,10 @@ import {
   updateGuildDeliveryChannel,
 } from "./guild-config.repository";
 
-export async function setDeliveryChannel(
-  guildId: string,
-  channelId: string,
-) {
+/**
+ * Creates or updates the configured delivery destination channel/thread for a guild.
+ */
+export async function setDeliveryChannel(guildId: string, channelId: string) {
   const existing = await findGuildConfig(guildId);
 
   if (existing) {

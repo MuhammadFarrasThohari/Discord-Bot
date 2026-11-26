@@ -1,16 +1,12 @@
 import "dotenv/config";
+
+import { Client, Events, GatewayIntentBits } from "discord.js";
+
+import { getBotEnv } from "./config/env";
+import { registerInteractionEvents } from "./events/interaction-create.event";
 import { startArtworkJob } from "./jobs/artwork-collector.job";
 
-import { Client, Events, GatewayIntentBits, EmbedBuilder } from "discord.js";
-import { registerInteractionEvents } from "./events/interaction-create.event";
-
-import { waifuCommand } from "./commands/waifu/waifu.command.js";
-
-const token = process.env.DISCORD_TOKEN;
-
-if (!token) {
-  throw new Error("DISCORD_TOKEN is not defined");
-}
+const { DISCORD_TOKEN } = getBotEnv();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -23,6 +19,4 @@ client.once(Events.ClientReady, (readyClient) => {
   startArtworkJob(client);
 });
 
-
-
-client.login(token);
+client.login(DISCORD_TOKEN);

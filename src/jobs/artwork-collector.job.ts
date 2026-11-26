@@ -1,11 +1,15 @@
-
-import cron from "node-cron";
 import type { Client } from "discord.js";
+import cron from "node-cron";
 
 import { deliverDailyArtworks } from "../modules/delivery/delivery.service";
 
 let isRunning = false;
 
+/**
+ * Schedules the daily artwork delivery job at 08:00 WIB (`Asia/Jakarta`).
+ * Uses an in-process `isRunning` guard so slow Danbooru/Discord runs never
+ * overlap across consecutive ticks.
+ */
 export function startArtworkJob(client: Client) {
   console.log("[CRON] Artwork job initialized.");
 

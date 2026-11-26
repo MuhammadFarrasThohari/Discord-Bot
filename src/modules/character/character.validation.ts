@@ -1,5 +1,14 @@
-
 import { z } from "zod";
+
+import { VALID_DAY_CODES } from "../../shared/utils/date";
+
+export const danbooruTagSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "Danbooru tag cannot be empty.")
+  .max(100, "Danbooru tag must not exceed 100 characters.")
+  .regex(/^[a-z0-9_!.'()\-]+$/, "Invalid Danbooru tag format.");
 
 export const characterAddSchema = z.object({
   name: z
@@ -7,45 +16,15 @@ export const characterAddSchema = z.object({
     .trim()
     .min(1, "Character name cannot be empty.")
     .max(80, "Character name must not exceed 80 characters."),
-
-  danbooruTag: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, "Danbooru tag cannot be empty.")
-    .max(100, "Danbooru tag must not exceed 100 characters.")
-    .regex(
-      /^[a-z0-9_!.'()\-]+$/,
-      "Invalid Danbooru tag format.",
-    ),
+  danbooruTag: danbooruTagSchema,
 });
 
 export const characterTagSchema = z.object({
-  danbooruTag: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, "Danbooru tag cannot be empty.")
-    .max(100, "Danbooru tag must not exceed 100 characters.")
-    .regex(
-      /^[a-z0-9_!.'()\-]+$/,
-      "Invalid Danbooru tag format.",
-    ),
+  danbooruTag: danbooruTagSchema,
 });
 
-const validDays = [
-  "sun",
-  "mon",
-  "tue",
-  "wed",
-  "thu",
-  "fri",
-  "sat",
-] as const;
-
 export const characterScheduleSchema = z.object({
-  danbooruTag: characterTagSchema.shape.danbooruTag,
-
+  danbooruTag: danbooruTagSchema,
   days: z
     .string()
     .transform((value) =>
@@ -56,7 +35,7 @@ export const characterScheduleSchema = z.object({
     )
     .pipe(
       z
-        .array(z.enum(validDays))
+        .array(z.enum(VALID_DAY_CODES))
         .min(1, "Select at least one day.")
         .refine(
           (days) => new Set(days).size === days.length,

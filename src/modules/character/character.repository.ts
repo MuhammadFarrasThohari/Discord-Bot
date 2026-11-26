@@ -1,71 +1,27 @@
-
 import { db } from "../../prisma/db";
 
 export async function findOrCreateDiscordUser(discordId: string) {
-  const existing = await db.orm.public.DiscordUser
-    .where({ discordId })
-    .first();
+  const existing = await db.orm.public.DiscordUser.where({ discordId }).first();
 
   if (existing) return existing;
 
-  return db.orm.public.DiscordUser.create({
-    discordId,
-  });
+  return db.orm.public.DiscordUser.create({ discordId });
 }
 
 export async function findCharacterByTag(danbooruTag: string) {
-  return db.orm.public.Character
-    .where({ danbooruTag })
-    .first();
+  return db.orm.public.Character.where({ danbooruTag }).first();
 }
 
-export async function createCharacter(
-  name: string,
-  danbooruTag: string,
-) {
-  return db.orm.public.Character.create({
-    name,
-    danbooruTag,
-  });
+export async function createCharacter(name: string, danbooruTag: string) {
+  return db.orm.public.Character.create({ name, danbooruTag });
 }
 
-export async function findUserCharacter(
-  userId: number,
-  characterId: number,
-) {
-  return db.orm.public.UserCharacter
-    .where({ userId, characterId })
-    .first();
+export async function findUserCharacter(userId: number, characterId: number) {
+  return db.orm.public.UserCharacter.where({ userId, characterId }).first();
 }
 
-export async function findUserCharacterByTag(
-  userId: number,
-  danbooruTag: string,
-) {
-  const character = await findCharacterByTag(danbooruTag);
-
-  if (!character) return null;
-
-  return findUserCharacter(userId, character.id);
-}
-
-export async function addUserCharacter(
-  userId: number,
-  characterId: number,
-) {
-  return db.orm.public.UserCharacter.create({
-    userId,
-    characterId,
-  });
-}
-
-export async function findCharacterSchedule(
-  userCharacterId: number,
-  dayOfWeek: number,
-) {
-  return db.orm.public.CharacterSchedule
-    .where({ userCharacterId, dayOfWeek })
-    .first();
+export async function addUserCharacter(userId: number, characterId: number) {
+  return db.orm.public.UserCharacter.create({ userId, characterId });
 }
 
 export async function addCharacterSchedule(
@@ -79,44 +35,35 @@ export async function addCharacterSchedule(
 }
 
 export async function getUserCharacters(userId: number) {
-  return db.orm.public.UserCharacter
-    .where({ userId, isActive: true })
-    .all();
+  return db.orm.public.UserCharacter.where({
+    userId,
+    isActive: true,
+  }).all();
 }
 
 export async function getCharacterSchedules(userCharacterId: number) {
-  return db.orm.public.CharacterSchedule
-    .where({ userCharacterId, isActive: true })
-    .all();
+  return db.orm.public.CharacterSchedule.where({
+    userCharacterId,
+    isActive: true,
+  }).all();
 }
 
 export async function getCharacterById(id: number) {
-  return db.orm.public.Character
-    .where({ id })
-    .first();
+  return db.orm.public.Character.where({ id }).first();
 }
 
-export async function deactivateUserCharacter(id: number) {
-  // Soft delete: keep historical delivery references intact.
-  return db.orm.public.UserCharacter
-    .where({ id })
-    .update({ isActive: false });
+/**
+ * Toggles the active flag on a user-character link instead of hard-deleting
+ * so historical `DeliveryHistory` and schedule records remain intact.
+ */
+export async function updateUserCharacterStatus(id: number, isActive: boolean) {
+  return db.orm.public.UserCharacter.where({ id }).update({ isActive });
 }
 
-export async function updateUserCharacterStatus(
-  id: number,
-  isActive: boolean,
-) {
-  return db.orm.public.UserCharacter
-    .where({ id })
-    .update({ isActive });
-}
-
-// Menghapus semua jadwal milik satu relasi karakter.
-export async function deleteCharacterSchedules(
-  userCharacterId: number,
-) {
-  return db.orm.public.CharacterSchedule
-    .where({ userCharacterId })
-    .deleteAll();
+/**
+ * Deletes all schedule rows belonging to a single user-character relation
+ * before inserting a replacement set.
+ */
+export async function deleteCharacterSchedules(userCharacterId: number) {
+  return db.orm.public.CharacterSchedule.where({ userCharacterId }).deleteAll();
 }

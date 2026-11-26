@@ -1,10 +1,16 @@
+import { validateDanbooruCharacterTag } from "../../integrations/danbooru/danbooru.service";
+import { DAY_CODE_TO_NUMBER, type DayCode } from "../../shared/utils/date";
+import {
+  CharacterAlreadyExistsError,
+  CharacterNotFoundError,
+  CharacterNotInListError,
+} from "./character.errors";
 import {
   addCharacterSchedule,
   addUserCharacter,
   createCharacter,
   deleteCharacterSchedules,
   findCharacterByTag,
-  findCharacterSchedule,
   findOrCreateDiscordUser,
   findUserCharacter,
   getCharacterById,
@@ -12,31 +18,18 @@ import {
   getUserCharacters,
   updateUserCharacterStatus,
 } from "./character.repository";
-import {
-  CharacterAlreadyExistsError,
-  CharacterNotFoundError,
-  CharacterNotInListError,
-} from "./character.errors";
-import { validateDanbooruCharacterTag } from "../../integrations/danbooru/danbooru.service";
 
-const DAY_MAP: Record<string, number> = {
-  sun: 0,
-  mon: 1,
-  tue: 2,
-  wed: 3,
-  thu: 4,
-  fri: 5,
-  sat: 6,
-};
-
+/**
+ * Validates the Danbooru tag remotely, ensures the character exists in the
+ * shared catalog, and links it to the user (reactivating a previously removed
+ * link if one exists).
+ */
 export async function addCharacterToUser(
   discordId: string,
   name: string,
   danbooruTag: string,
 ) {
-  // Validate Danbooru tag first.
   const danbooruTagData = await validateDanbooruCharacterTag(danbooruTag);
-
   const user = await findOrCreateDiscordUser(discordId);
 
   let character = await findCharacterByTag(danbooruTagData.name);
@@ -70,13 +63,22 @@ export async function addCharacterToUser(
   };
 }
 
+/**
+ * Replaces a user's delivery days for an active character using a delete-and-insert
+ * strategy so callers always provide the full authoritative weekly schedule.
+ */
 export async function setCharacterSchedule(
   discordId: string,
   danbooruTag: string,
-  rawDays: string,
+  days: readonly DayCode[],
 ) {
-  const user = await findOrCreateDiscordUser(discordId);
+  const uniqueDays = [...new Set(days)];
 
+  if (uniqueDays.length === 0) {
+    throw new Error("Invalid days. Use: mon,tue,wed,thu,fri,sat,sun");
+  }
+
+  const user = await findOrCreateDiscordUser(discordId);
   const character = await findCharacterByTag(danbooruTag);
 
   if (!character) {
@@ -89,57 +91,55 @@ export async function setCharacterSchedule(
     throw new CharacterNotInListError();
   }
 
-  const days = [
-    ...new Set(rawDays.split(",").map((day) => day.trim().toLowerCase())),
-  ];
-
-  const invalidDays = days.filter((day) => !(day in DAY_MAP));
-
-  if (invalidDays.length > 0 || days.length === 0) {
-    throw new Error("Invalid days. Use: mon,tue,wed,thu,fri,sat,sun");
-  }
-
-  // Hapus jadwal sebelumnya.
   await deleteCharacterSchedules(userCharacter.id);
 
-  // Buat jadwal baru.
   const schedules = [];
 
-  for (const day of days) {
-    schedules.push(await addCharacterSchedule(userCharacter.id, DAY_MAP[day]));
+  for (const day of uniqueDays) {
+    schedules.push(
+      await addCharacterSchedule(userCharacter.id, DAY_CODE_TO_NUMBER[day]),
+    );
   }
 
   return schedules;
 }
 
+/**
+ * Lists all active characters and their configured weekday numbers for a user.
+ */
 export async function listUserCharacters(discordId: string) {
   const user = await findOrCreateDiscordUser(discordId);
   const userCharacters = await getUserCharacters(user.id);
 
-  const result = [];
+  const items = await Promise.all(
+    userCharacters.map(async (userCharacter) => {
+      const [character, schedules] = await Promise.all([
+        getCharacterById(userCharacter.characterId),
+        getCharacterSchedules(userCharacter.id),
+      ]);
 
-  for (const userCharacter of userCharacters) {
-    const character = await getCharacterById(userCharacter.characterId);
+      if (!character) return null;
 
-    if (!character) continue;
+      return {
+        ...character,
+        schedules: schedules.map((schedule) => schedule.dayOfWeek),
+      };
+    }),
+  );
 
-    const schedules = await getCharacterSchedules(userCharacter.id);
-
-    result.push({
-      ...character,
-      schedules: schedules.map((schedule) => schedule.dayOfWeek),
-    });
-  }
-
-  return result;
+  return items.filter(
+    (item): item is NonNullable<typeof item> => item !== null,
+  );
 }
 
+/**
+ * Soft-deletes a character from a user's active list by setting `isActive = false`.
+ */
 export async function removeCharacterFromUser(
   discordId: string,
   danbooruTag: string,
 ) {
   const user = await findOrCreateDiscordUser(discordId);
-
   const character = await findCharacterByTag(danbooruTag);
 
   if (!character) {

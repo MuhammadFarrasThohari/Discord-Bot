@@ -1,15 +1,28 @@
 import { db } from "../../prisma/db";
 
+export interface ScheduledCharacterInfo {
+  id: number;
+  name: string;
+  danbooruTag: string;
+}
+
 export interface ScheduledDeliveryTarget {
   userId: number;
   discordId: string;
-  characters: {
-    id: number;
-    name: string;
-    danbooruTag: string;
-  }[];
+  characters: ScheduledCharacterInfo[];
 }
 
+export async function findActiveDiscordUserByDiscordId(discordId: string) {
+  return db.orm.public.DiscordUser.where({
+    discordId,
+    isActive: true,
+  }).first();
+}
+
+/**
+ * Aggregates all active users and their active scheduled characters for a given
+ * weekday (`0..6`), deduplicating characters per user.
+ */
 export async function getScheduledCharactersForDay(
   dayOfWeek: number,
 ): Promise<ScheduledDeliveryTarget[]> {
@@ -21,7 +34,6 @@ export async function getScheduledCharactersForDay(
   const targets = new Map<number, ScheduledDeliveryTarget>();
 
   for (const schedule of schedules) {
-    // Get active user-character relation.
     const userCharacter = await db.orm.public.UserCharacter.where({
       id: schedule.userCharacterId,
       isActive: true,
@@ -29,13 +41,11 @@ export async function getScheduledCharactersForDay(
 
     if (!userCharacter) continue;
 
-    // Get user and character.
     const [user, character] = await Promise.all([
       db.orm.public.DiscordUser.where({
         id: userCharacter.userId,
         isActive: true,
       }).first(),
-
       db.orm.public.Character.where({
         id: userCharacter.characterId,
         isActive: true,
@@ -44,20 +54,21 @@ export async function getScheduledCharactersForDay(
 
     if (!user || !character) continue;
 
+    const characterInfo: ScheduledCharacterInfo = {
+      id: character.id,
+      name: character.name,
+      danbooruTag: character.danbooruTag,
+    };
+
     const existingTarget = targets.get(user.id);
 
     if (existingTarget) {
-      // Avoid adding the same character more than once.
       const alreadyExists = existingTarget.characters.some(
         (item) => item.id === character.id,
       );
 
       if (!alreadyExists) {
-        existingTarget.characters.push({
-          id: character.id,
-          name: character.name,
-          danbooruTag: character.danbooruTag,
-        });
+        existingTarget.characters.push(characterInfo);
       }
 
       continue;
@@ -66,24 +77,11 @@ export async function getScheduledCharactersForDay(
     targets.set(user.id, {
       userId: user.id,
       discordId: user.discordId,
-      characters: [
-        {
-          id: character.id,
-          name: character.name,
-          danbooruTag: character.danbooruTag,
-        },
-      ],
+      characters: [characterInfo],
     });
   }
 
   return Array.from(targets.values());
-}
-
-export async function findArtworkBySourceId(sourceId: string) {
-  return db.orm.public.Artwork.where({
-    source: "danbooru",
-    sourceId,
-  }).first();
 }
 
 export async function hasUserReceivedArtwork(
@@ -107,14 +105,14 @@ export async function createDeliveryHistory(data: {
   return db.orm.public.DeliveryHistory.create(data);
 }
 
+/**
+ * Loads all active characters scheduled on `dayOfWeek` for a single Discord user.
+ */
 export async function getScheduledCharactersForUser(
   discordId: string,
   dayOfWeek: number,
 ): Promise<ScheduledDeliveryTarget | null> {
-  const user = await db.orm.public.DiscordUser.where({
-    discordId,
-    isActive: true,
-  }).first();
+  const user = await findActiveDiscordUserByDiscordId(discordId);
 
   if (!user) return null;
 

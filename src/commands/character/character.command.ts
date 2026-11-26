@@ -1,7 +1,7 @@
+import { SlashCommandBuilder } from "discord.js";
 
-import {
-  SlashCommandBuilder,
-} from "discord.js";
+import type { BotCommand } from "../command.types";
+import { handleCharacterCommand } from "./character.handler";
 
 export const characterCommand = new SlashCommandBuilder()
   .setName("character")
@@ -62,3 +62,8 @@ export const characterCommand = new SlashCommandBuilder()
           .setRequired(true),
       ),
   );
+
+export const characterCommandDefinition: BotCommand = {
+  data: characterCommand,
+  execute: handleCharacterCommand,
+};
