@@ -74,6 +74,7 @@ async function buildPendingDeliveriesForUser(
 
   for (const character of characters) {
     let posts: DanbooruPost[];
+    console.log(`[DELIVERY] Fetching artwork for ${character.name}`);
 
     try {
       posts = await fetchSfwArtworks({
@@ -88,7 +89,12 @@ async function buildPendingDeliveriesForUser(
       continue;
     }
 
-    for (const post of shuffle(posts)) {
+    const candidates = shuffle(posts);
+    console.log(
+      `[DELIVERY] Found ${candidates.length} candidate(s) for ${character.name}`,
+    );
+
+    for (const post of candidates) {
       if (!post.file_url) continue;
 
       let artwork;

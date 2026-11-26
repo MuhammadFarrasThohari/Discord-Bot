@@ -14,21 +14,26 @@ interface FetchArtworkOptions {
 }
 
 /**
- * Queries SFW solo-character artworks (`rating:g` and `chartags:1`) and
- * applies a defensive local filter in case Danbooru returns deleted,
- * pending, or fileless posts.
+ * Queries SFW solo-character artworks (`rating:g` and `solo`) and applies a
+ * defensive local filter in case Danbooru returns deleted, pending, or
+ * fileless posts. Throws if Danbooru returns an empty post list so delivery
+ * logs record the failed fetch attempt.
  */
 export async function fetchSfwArtworks({
   tags,
   page = 1,
 }: FetchArtworkOptions): Promise<DanbooruPost[]> {
-  const queryTags = [...tags, "rating:g", "chartags:1"].join(" ");
+  const queryTags = [...tags, "rating:g", "solo"].join(" ");
 
   const posts = await getDanbooruPosts({
     tags: queryTags,
     limit: 20,
     page,
   });
+
+  if (posts.length === 0) {
+    throw new Error(`No Danbooru posts found for query: ${queryTags}`);
+  }
 
   return posts.filter(
     (post) =>
