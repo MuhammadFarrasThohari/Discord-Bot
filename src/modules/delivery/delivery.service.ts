@@ -1,140 +1,79 @@
-import {
-  Client,
-  ChannelType,
-  EmbedBuilder,
-  PermissionFlagsBits,
-  ThreadChannel,
-} from "discord.js";
-
-import { getDeliveryChannel } from "../guild-config/guild-config.service";
-import { db } from "../../prisma/db";
-
-import {
-  getScheduledCharactersForDay,
-  findArtworkBySourceId,
-  hasUserReceivedArtwork,
-  createDeliveryHistory,
-  getScheduledCharactersForUser,
-  getUserDeliveryForDate,
-} from "./delivery.repository";
+import type { Client } from "discord.js";
 
 import { fetchSfwArtworks } from "../../integrations/danbooru/danbooru.service";
-import { saveDanbooruArtwork } from "../artwork/artwork.repository";
+import type { DanbooruPost } from "../../integrations/danbooru/danbooru.types";
+import { shuffle } from "../../shared/utils/array";
+import {
+  getJakartaDateRange,
+  getJakartaDayOfWeek,
+} from "../../shared/utils/date";
+import {
+  findArtworkBySourceId,
+  saveDanbooruArtwork,
+} from "../artwork/artwork.repository";
+import { getConfiguredDeliveryChannel } from "./delivery.channel";
+import { createMessageUrl, createWaifuMessagePayload } from "./delivery.embed";
+import {
+  createDeliveryHistory,
+  findActiveDiscordUserByDiscordId,
+  getScheduledCharactersForDay,
+  getScheduledCharactersForUser,
+  getUserDeliveryForDate,
+  hasUserReceivedArtwork,
+  type ScheduledCharacterInfo,
+  type ScheduledDeliveryTarget,
+} from "./delivery.repository";
 
-function shuffle<T>(items: T[]): T[] {
-  const result = [...items];
+type DeliveryChannel = Awaited<ReturnType<typeof getConfiguredDeliveryChannel>>;
 
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-
-  return result;
+interface PendingDeliveryMessage {
+  character: ScheduledCharacterInfo;
+  artworkId: number;
+  payload: ReturnType<typeof createWaifuMessagePayload>;
 }
 
-function getJakartaDayOfWeek(): number {
-  const weekday = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Jakarta",
-    weekday: "short",
-  }).format(new Date());
+export type DeliverTodayResult =
+  | {
+      status: "already-delivered";
+      messageUrl: string;
+    }
+  | {
+      status: "no-schedule";
+    }
+  | {
+      status: "delivered";
+    }
+  | {
+      status: "no-artwork";
+    };
 
-  const dayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
+async function getExistingDailyDelivery(userId: number) {
+  const { startOfDay, endOfDay } = getJakartaDateRange();
 
-  const day = dayMap[weekday];
-
-  if (day === undefined) {
-    throw new Error(`Invalid Jakarta weekday: ${weekday}`);
-  }
-
-  return day;
+  return getUserDeliveryForDate(userId, startOfDay, endOfDay);
 }
 
-async function ensureThreadUsable(thread: ThreadChannel) {
-  if (thread.locked) {
-    throw new Error(
-      "Configured delivery thread is locked. Please unlock it first.",
-    );
-  }
+async function getOrCreateDanbooruArtwork(post: DanbooruPost) {
+  const existing = await findArtworkBySourceId(String(post.id));
 
-  if (!thread.archived) return;
+  if (existing) return existing;
 
-  const botMember = await thread.guild.members.fetchMe();
-  const permissions = thread.permissionsFor(botMember);
-
-  if (!permissions?.has(PermissionFlagsBits.ManageThreads)) {
-    throw new Error(
-      "Bot needs Manage Threads permission to unarchive the delivery thread.",
-    );
-  }
-
-  try {
-    await thread.setArchived(false);
-    console.log(`[DELIVERY] Successfully unarchived thread ${thread.id}.`);
-  } catch (error) {
-    console.error(`[DELIVERY] Failed to unarchive thread ${thread.id}:`, error);
-
-    throw new Error("Unable to unarchive the configured delivery thread.");
-  }
+  return saveDanbooruArtwork(post);
 }
 
-async function getConfiguredDeliveryChannel(client: Client) {
-  const guildId = process.env.DISCORD_GUILD_ID;
-
-  if (!guildId) {
-    throw new Error("DISCORD_GUILD_ID is not configured.");
-  }
-
-  const config = await getDeliveryChannel(guildId);
-
-  if (!config) {
-    throw new Error(
-      `Delivery channel has not been configured for guild ${guildId}.`,
-    );
-  }
-
-  const channel = await client.channels.fetch(config.deliveryChannelId);
-
-  if (!channel || !("guildId" in channel) || channel.guildId !== guildId) {
-    throw new Error(
-      "Configured delivery destination is invalid or no longer accessible.",
-    );
-  }
-
-  if (channel.isThread()) {
-    await ensureThreadUsable(channel);
-    return channel;
-  }
-
-  if (
-    channel.type === ChannelType.GuildText ||
-    channel.type === ChannelType.GuildAnnouncement
-  ) {
-    return channel;
-  }
-
-  throw new Error(
-    "Configured delivery destination is not a supported text channel or thread.",
-  );
-}
-
-async function deliverToUser(
-  target: Awaited<ReturnType<typeof getScheduledCharactersForDay>>[number],
-  channel: Awaited<ReturnType<typeof getConfiguredDeliveryChannel>>,
-) {
+/**
+ * Selects at most one unseen SFW artwork for each scheduled character of a user.
+ * Characters and fetched posts are shuffled so repeated schedules vary naturally,
+ * and `DeliveryHistory` prevents sending duplicate artworks to the same user.
+ */
+async function buildPendingDeliveriesForUser(
+  target: ScheduledDeliveryTarget,
+): Promise<PendingDeliveryMessage[]> {
   const characters = shuffle(target.characters);
-  let message = [];
+  const messages: PendingDeliveryMessage[] = [];
 
   for (const character of characters) {
-    let posts;
+    let posts: DanbooruPost[];
 
     try {
       posts = await fetchSfwArtworks({
@@ -146,37 +85,26 @@ async function deliverToUser(
         `[DELIVERY] Failed to fetch artwork for ${character.name}:`,
         error,
       );
-
       continue;
     }
 
-    const candidates = shuffle(posts);
-
-    for (const post of candidates) {
+    for (const post of shuffle(posts)) {
       if (!post.file_url) continue;
 
       let artwork;
-      // Find or save artwork.
 
       try {
-        artwork = await findArtworkBySourceId(String(post.id));
-
-        if (!artwork) {
-          artwork = await saveDanbooruArtwork(post);
-        }
+        artwork = await getOrCreateDanbooruArtwork(post);
       } catch (error) {
         console.error(`[DELIVERY] Failed to save artwork ${post.id}:`, error);
-
         continue;
       }
 
       if (!artwork) {
         console.error(`[DELIVERY] Artwork ${post.id} could not be retrieved.`);
-
         continue;
       }
 
-      // Avoid sending the same artwork to the same user.
       let alreadyDelivered: boolean;
 
       try {
@@ -189,76 +117,74 @@ async function deliverToUser(
           `[DELIVERY] Failed to check delivery history for artwork ${artwork.id}:`,
           error,
         );
-
         continue;
       }
 
       if (alreadyDelivered) continue;
 
-      const embed = new EmbedBuilder()
-        .setColor(0x9324b6)
-        .setTitle(character.name)
-        .setURL(`https://danbooru.donmai.us/posts/${post.id}`)
-        .setImage(post.file_url)
-        .setFooter({
-          text: "Daily Waifu • Danbooru",
-        });
+      messages.push({
+        character,
+        artworkId: artwork.id,
+        payload: createWaifuMessagePayload(
+          target.discordId,
+          character.name,
+          post.id,
+          post.file_url,
+        ),
+      });
 
-      try {
-        // Build the message
-        message.push({
-          character: character,
-          artwork: artwork,
-          content: {
-            content: `✨ Daily Waifu for <@${target.discordId}>!`,
-            embeds: [embed],
-            allowedMentions: {
-              users: [target.discordId],
-            },
-          },
-        });
-      } catch (error) {
-        console.error(
-          `[DELIVERY] Failed to send artwork ${post.id} to ${target.discordId}:`,
-          error,
-        );
-      }
-      break; // Stop after one artwork for this character.
+      // Only one artwork per scheduled character is delivered per run.
+      break;
     }
   }
 
-  for (const msg of message) {
+  return messages;
+}
+
+/**
+ * Sends all prepared character artworks for a single user and records each
+ * delivered message in `DeliveryHistory` immediately after Discord confirms send.
+ */
+async function deliverToUser(
+  target: ScheduledDeliveryTarget,
+  channel: DeliveryChannel,
+): Promise<boolean> {
+  const pendingMessages = await buildPendingDeliveriesForUser(target);
+
+  for (const message of pendingMessages) {
     try {
-      const sentMessage = await channel.send(msg.content);
+      const sentMessage = await channel.send(message.payload);
 
       await createDeliveryHistory({
         userId: target.userId,
-        artworkId: msg.artwork.id,
+        artworkId: message.artworkId,
         channelId: sentMessage.channel.id,
         messageId: sentMessage.id,
       });
 
       console.log(
-        `[DELIVERY] Successfully sent message for ${msg.character.name} to ${target.discordId}`,
+        `[DELIVERY] Successfully sent message for ${message.character.name} to ${target.discordId}`,
       );
     } catch (error) {
       console.error(
-        `[DELIVERY] Failed to send message for ${msg.character.name} to ${target.discordId}:`,
+        `[DELIVERY] Failed to send message for ${message.character.name} to ${target.discordId}:`,
         error,
       );
     }
   }
 
-  return message.length > 0;
+  return pendingMessages.length > 0;
 }
 
+/**
+ * Runs the scheduled daily artwork delivery for all users with active schedules
+ * on the current Jakarta weekday. Users are processed sequentially to avoid
+ * bursting Discord channel message rate limits, and users who already received
+ * a delivery today (e.g. via `/waifu today`) are skipped.
+ */
 export async function deliverDailyArtworks(client: Client) {
   const dayOfWeek = getJakartaDayOfWeek();
-
-  // Get the channel configured through /setup.
   const channel = await getConfiguredDeliveryChannel(client);
-
-  // Get all users with active schedules for today.
   const targets = await getScheduledCharactersForDay(dayOfWeek);
 
   console.log(`[DELIVERY] Starting delivery for ${targets.length} users`);
@@ -270,7 +196,6 @@ export async function deliverDailyArtworks(client: Client) {
     skipped: 0,
   };
 
-  // Process users sequentially to avoid sending too many messages at once.
   for (const target of targets) {
     try {
       const existingDelivery = await getExistingDailyDelivery(target.userId);
@@ -289,7 +214,6 @@ export async function deliverDailyArtworks(client: Client) {
       }
     } catch (error) {
       results.failed++;
-
       console.error(`[DELIVERY] Failed for ${target.discordId}:`, error);
     }
   }
@@ -299,71 +223,23 @@ export async function deliverDailyArtworks(client: Client) {
   return results;
 }
 
-function getJakartaDateRange() {
-  const now = new Date();
-
-  // Convert current time to Jakarta's UTC+7.
-  const jakartaNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-
-  // Start of the current Jakarta calendar day, converted back to UTC.
-  const startOfDay = new Date(
-    Date.UTC(
-      jakartaNow.getUTCFullYear(),
-      jakartaNow.getUTCMonth(),
-      jakartaNow.getUTCDate(),
-    ) -
-      7 * 60 * 60 * 1000,
-  );
-
-  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-
-  return { startOfDay, endOfDay };
-}
-
-async function getExistingDailyDelivery(userId: number) {
-  const { startOfDay, endOfDay } = getJakartaDateRange();
-
-  return getUserDeliveryForDate(userId, startOfDay, endOfDay);
-}
-
-function createMessageUrl(
-  guildId: string,
-  channelId: string,
-  messageId: string,
-) {
-  return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
-}
-
-export type DeliverTodayResult =
-  | {
-      status: "already-delivered";
-      messageUrl: string;
-    }
-  | {
-      status: "no-schedule";
-    }
-  | {
-      status: "delivered";
-    }
-  | {
-      status: "no-artwork";
-    };
-
+/**
+ * Handles on-demand `/waifu today` requests. Enforces a once-per-Jakarta-day
+ * cooldown by checking `DeliveryHistory` before resolving scheduled characters
+ * and delivering to the configured guild channel.
+ */
 export async function deliverTodayArtwork(
   client: Client,
   discordId: string,
   guildId: string,
 ): Promise<DeliverTodayResult> {
-  const user = await db.orm.public.DiscordUser.where({
-    discordId,
-    isActive: true,
-  }).first();
+  const user = await findActiveDiscordUserByDiscordId(discordId);
 
   if (!user) {
     return { status: "no-schedule" };
   }
 
-  // Check daily cooldown first.
+  // Enforce daily cooldown before querying Danbooru or sending messages.
   const existingDelivery = await getExistingDailyDelivery(user.id);
 
   if (existingDelivery) {
@@ -378,15 +254,13 @@ export async function deliverTodayArtwork(
   }
 
   const dayOfWeek = getJakartaDayOfWeek();
-
   const target = await getScheduledCharactersForUser(discordId, dayOfWeek);
 
   if (!target || target.characters.length === 0) {
     return { status: "no-schedule" };
   }
 
-  const channel = await getConfiguredDeliveryChannel(client);
-
+  const channel = await getConfiguredDeliveryChannel(client, guildId);
   const delivered = await deliverToUser(target, channel);
 
   if (!delivered) {

@@ -1,5 +1,11 @@
-import { getDanbooruPosts, getDanbooruTag } from "./danbooru.client";
 import axios from "axios";
+
+import { getDanbooruPosts, getDanbooruTag } from "./danbooru.client";
+import {
+  DanbooruTagNotFoundError,
+  DanbooruUnavailableError,
+  InvalidDanbooruTagError,
+} from "./danbooru.errors";
 import type { DanbooruPost } from "./danbooru.types";
 
 interface FetchArtworkOptions {
@@ -7,6 +13,11 @@ interface FetchArtworkOptions {
   page?: number;
 }
 
+/**
+ * Queries SFW solo-character artworks (`rating:g` and `chartags:1`) and
+ * applies a defensive local filter in case Danbooru returns deleted,
+ * pending, or fileless posts.
+ */
 export async function fetchSfwArtworks({
   tags,
   page = 1,
@@ -19,37 +30,20 @@ export async function fetchSfwArtworks({
     page,
   });
 
-  return posts.filter((post) => {
-    return (
+  return posts.filter(
+    (post) =>
       post.rating === "g" &&
       !post.is_deleted &&
       !post.is_pending &&
-      Boolean(post.file_url)
-    );
-  });
+      Boolean(post.file_url),
+  );
 }
 
-export class DanbooruTagNotFoundError extends Error {
-  constructor(tag: string) {
-    super(`Danbooru tag "${tag}" was not found.`);
-    this.name = "DanbooruTagNotFoundError";
-  }
-}
-
-export class InvalidDanbooruTagError extends Error {
-  constructor(tag: string) {
-    super(`"${tag}" is not a valid character tag.`);
-    this.name = "InvalidDanbooruTagError";
-  }
-}
-
-export class DanbooruUnavailableError extends Error {
-  constructor() {
-    super("Danbooru is currently unavailable. Please try again later.");
-    this.name = "DanbooruUnavailableError";
-  }
-}
-
+/**
+ * Verifies that a tag exists on Danbooru as an active, non-empty character tag.
+ * Translates Axios transport failures into `DanbooruUnavailableError` so command
+ * handlers can surface a clean user-facing message.
+ */
 export async function validateDanbooruCharacterTag(tagName: string) {
   try {
     const tag = await getDanbooruTag(tagName);

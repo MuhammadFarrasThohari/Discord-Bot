@@ -1,22 +1,19 @@
+import { AppError } from "../../shared/errors/app-error";
 
-export class CharacterAlreadyExistsError extends Error {
+export class CharacterAlreadyExistsError extends AppError {
   constructor() {
     super("This character is already in your list.");
-    this.name = "CharacterAlreadyExistsError";
   }
 }
 
-export class CharacterNotFoundError extends Error {
+export class CharacterNotFoundError extends AppError {
   constructor() {
     super("Character was not found in your list.");
-    this.name = "CharacterNotFoundError";
   }
-
 }
 
-export class CharacterNotInListError extends Error {
+export class CharacterNotInListError extends AppError {
   constructor() {
     super("This character is not in your active list.");
-    this.name = "CharacterNotInListError";
   }
 }

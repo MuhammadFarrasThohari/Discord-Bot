@@ -1,8 +1,11 @@
 import {
-  SlashCommandBuilder,
   ChannelType,
   PermissionFlagsBits,
+  SlashCommandBuilder,
 } from "discord.js";
+
+import type { BotCommand } from "../command.types";
+import { handleSetupCommand } from "./setup.handler";
 
 export const setupCommand = new SlashCommandBuilder()
   .setName("setup")
@@ -20,3 +23,8 @@ export const setupCommand = new SlashCommandBuilder()
       )
       .setRequired(true),
   );
+
+export const setupCommandDefinition: BotCommand = {
+  data: setupCommand,
+  execute: handleSetupCommand,
+};
