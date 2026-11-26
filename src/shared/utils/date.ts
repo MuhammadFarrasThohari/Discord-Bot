@@ -30,6 +30,20 @@ export const DAY_NUMBER_TO_LABEL = [
   "Sat",
 ] as const;
 
+/**
+ * Monday-first rank (`Mon = 0 .. Sun = 6`) used to sort schedules and
+ * character lists consistently with the `mon..sun` CLI prompt.
+ */
+export const WEEKDAY_MON_FIRST_ORDER: Record<number, number> = {
+  1: 0,
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5,
+  0: 6,
+};
+
 const JAKARTA_TIMEZONE = "Asia/Jakarta";
 const JAKARTA_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +57,41 @@ const WEEKDAY_SHORT_TO_NUMBER: Record<string, number> = {
   Fri: 5,
   Sat: 6,
 };
+
+/**
+ * Deduplicates and sorts numeric weekday values (`0..6`) in Monday-to-Sunday order.
+ */
+export function sortWeekdayNumbers(days: readonly number[]): number[] {
+  return [...new Set(days)].sort(
+    (a, b) =>
+      (WEEKDAY_MON_FIRST_ORDER[a] ?? Number.MAX_SAFE_INTEGER) -
+      (WEEKDAY_MON_FIRST_ORDER[b] ?? Number.MAX_SAFE_INTEGER),
+  );
+}
+
+/**
+ * Returns the Monday-first rank of a character's earliest scheduled day
+ * (or `Number.MAX_SAFE_INTEGER` when unscheduled so unscheduled items sort last).
+ */
+export function getEarliestWeekdaySortKey(days: readonly number[]): number {
+  const sorted = sortWeekdayNumbers(days);
+
+  if (sorted.length === 0) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return WEEKDAY_MON_FIRST_ORDER[sorted[0]!] ?? Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * Formats numeric weekday values (`0..6`) as a Monday-first comma-separated label string.
+ */
+export function formatWeekdayNumbers(days: readonly number[]): string {
+  return sortWeekdayNumbers(days)
+    .map((day) => DAY_NUMBER_TO_LABEL[day])
+    .filter(Boolean)
+    .join(", ");
+}
 
 /**
  * Returns the day-of-week index (0 = Sunday .. 6 = Saturday) in `Asia/Jakarta`

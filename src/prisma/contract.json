@@ -305,6 +305,21 @@
               }
             },
             "relations": {
+              "deliveryHistory": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "characterId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryHistory",
+                  "namespace": "public"
+                }
+              },
               "users": {
                 "cardinality": "1:N",
                 "on": {
@@ -456,6 +471,13 @@
                   "kind": "scalar"
                 }
               },
+              "characterId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "deliveredAt": {
                 "nullable": false,
                 "type": {
@@ -505,6 +527,22 @@
                   "namespace": "public"
                 }
               },
+              "character": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "characterId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Character",
+                  "namespace": "public"
+                }
+              },
               "user": {
                 "cardinality": "N:1",
                 "nullable": true,
@@ -529,6 +567,9 @@
                 },
                 "channelId": {
                   "column": "channelId"
+                },
+                "characterId": {
+                  "column": "characterId"
                 },
                 "deliveredAt": {
                   "column": "deliveredAt"
@@ -1200,6 +1241,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "characterId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "deliveredAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -1254,6 +1300,25 @@
                 },
                 {
                   "index": {
+                    "name": "DeliveryHistory_characterId_idx_2423fe9d"
+                  },
+                  "source": {
+                    "columns": [
+                      "characterId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "DeliveryHistory"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Character"
+                  }
+                },
+                {
+                  "index": {
                     "name": "DeliveryHistory_artworkId_idx_d1231e6d"
                   },
                   "source": {
@@ -1279,6 +1344,24 @@
                   ],
                   "name": "DeliveryHistory_artworkId_idx_d1231e6d",
                   "prefix": "DeliveryHistory_artworkId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "characterId"
+                  ],
+                  "name": "DeliveryHistory_characterId_idx_2423fe9d",
+                  "prefix": "DeliveryHistory_characterId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "characterId",
+                    "deliveredAt"
+                  ],
+                  "name": "DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095",
+                  "prefix": "DeliveryHistory_userId_characterId_deliveredAt_idx",
                   "unique": false
                 },
                 {
@@ -1581,7 +1664,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "cada9effeeff8012a4905783e4661d06444e4a082e6bdd43592e0260543e27c5"
+    "storageHash": "1edd03138fc959ac175059bbe19275f2ba382267d67f04913080f76932546fc8"
   },
   "execution": {
     "executionHash": "71e678b8d1e7621793ecdcbb293ad952866f3d9ddd2f2374180caa3d254fa279",

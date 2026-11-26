@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'cada9effeeff8012a4905783e4661d06444e4a082e6bdd43592e0260543e27c5'>;
+  StorageHashBase<'1edd03138fc959ac175059bbe19275f2ba382267d67f04913080f76932546fc8'>;
 export type ExecutionHash =
   ExecutionHashBase<'71e678b8d1e7621793ecdcbb293ad952866f3d9ddd2f2374180caa3d254fa279'>;
 export type ProfileHash =
@@ -338,8 +338,9 @@ export namespace Models {
     isActive: FieldOutputTypes['public']['Character']['isActive'];
     name: FieldOutputTypes['public']['Character']['name'];
     updatedAt: FieldOutputTypes['public']['Character']['updatedAt'];
+    deliveryHistory: public_DeliveryHistory[];
     users: public_UserCharacter[];
-    readonly [RelationKeys]?: 'users';
+    readonly [RelationKeys]?: 'deliveryHistory' | 'users';
   };
   export type public_CharacterSchedule = {
     createdAt: FieldOutputTypes['public']['CharacterSchedule']['createdAt'];
@@ -354,13 +355,15 @@ export namespace Models {
   export type public_DeliveryHistory = {
     artworkId: FieldOutputTypes['public']['DeliveryHistory']['artworkId'];
     channelId: FieldOutputTypes['public']['DeliveryHistory']['channelId'];
+    characterId: FieldOutputTypes['public']['DeliveryHistory']['characterId'];
     deliveredAt: FieldOutputTypes['public']['DeliveryHistory']['deliveredAt'];
     id: FieldOutputTypes['public']['DeliveryHistory']['id'];
     messageId: FieldOutputTypes['public']['DeliveryHistory']['messageId'];
     userId: FieldOutputTypes['public']['DeliveryHistory']['userId'];
     artwork: public_Artwork;
+    character: public_Character | null;
     user: public_DiscordUser | null;
-    readonly [RelationKeys]?: 'artwork' | 'user';
+    readonly [RelationKeys]?: 'artwork' | 'character' | 'user';
   };
   export type public_DiscordUser = {
     createdAt: FieldOutputTypes['public']['DiscordUser']['createdAt'];
@@ -730,6 +733,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly characterId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly deliveredAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -771,6 +780,18 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
+                  readonly name: 'DeliveryHistory_characterId_idx_2423fe9d';
+                  readonly prefix: 'DeliveryHistory_characterId_idx';
+                  readonly columns: readonly ['characterId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095';
+                  readonly prefix: 'DeliveryHistory_userId_characterId_deliveredAt_idx';
+                  readonly columns: readonly ['userId', 'characterId', 'deliveredAt'];
+                  readonly unique: false;
+                },
+                {
                   readonly name: 'DeliveryHistory_userId_deliveredAt_idx_c60c106a';
                   readonly prefix: 'DeliveryHistory_userId_deliveredAt_idx';
                   readonly columns: readonly ['userId', 'deliveredAt'];
@@ -793,6 +814,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'DiscordUser';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'DeliveryHistory';
+                    readonly columns: readonly ['characterId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Character';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -1205,6 +1238,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly deliveryHistory: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'DeliveryHistory';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['characterId'];
+                };
+              };
               readonly users: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -1302,6 +1346,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly characterId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly deliveredAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -1336,6 +1384,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly character: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Character';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['characterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly user: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -1355,6 +1415,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly artworkId: { readonly column: 'artworkId' };
                 readonly channelId: { readonly column: 'channelId' };
+                readonly characterId: { readonly column: 'characterId' };
                 readonly deliveredAt: { readonly column: 'deliveredAt' };
                 readonly id: { readonly column: 'id' };
                 readonly messageId: { readonly column: 'messageId' };

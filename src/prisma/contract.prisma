@@ -38,14 +38,15 @@ model DiscordUser {
 }
 
 model Character {
-  id          Int             @id @default(autoincrement())
-  name        String
-  danbooruTag String          @unique
-  isActive    Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now()) @onUpdate(now())
+  id              Int               @id @default(autoincrement())
+  name            String
+  danbooruTag     String            @unique
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @onUpdate(now())
 
-  users       UserCharacter[]
+  users           UserCharacter[]
+  deliveryHistory DeliveryHistory[]
 }
 
 model UserCharacter {
@@ -81,16 +82,19 @@ model CharacterSchedule {
 model DeliveryHistory {
   id          Int          @id @default(autoincrement())
   userId      Int?
+  characterId Int?
   artworkId   Int
   channelId   String
   messageId   String
   deliveredAt DateTime     @default(now())
 
   user        DiscordUser? @relation(fields: [userId], references: [id])
+  character   Character?   @relation(fields: [characterId], references: [id])
   artwork     Artwork      @relation(fields: [artworkId], references: [id])
 
   @@unique([userId, artworkId])
   @@index([userId, deliveredAt])
+  @@index([userId, characterId, deliveredAt])
 }
 
 model GuildConfig {

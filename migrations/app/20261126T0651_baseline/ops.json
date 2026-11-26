@@ -1,0 +1,1586 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.Artwork",
+    "label": "Create table \"Artwork\"",
+    "summary": "Creates table \"Artwork\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Artwork"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Artwork\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Artwork\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Artwork\"",
+        "sql": "CREATE TABLE \"public\".\"Artwork\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"favoriteCount\" int4 DEFAULT 0 NOT NULL,\n  \"fileExt\" text,\n  \"fileSize\" int4,\n  \"fileUrl\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isDeleted\" bool DEFAULT false NOT NULL,\n  \"isPending\" bool DEFAULT false NOT NULL,\n  \"previewUrl\" text,\n  \"rating\" text NOT NULL,\n  \"sampleUrl\" text,\n  \"score\" int4 DEFAULT 0 NOT NULL,\n  \"source\" text NOT NULL,\n  \"sourceCreatedAt\" timestamptz(3),\n  \"sourceId\" text NOT NULL,\n  \"tagString\" text,\n  \"title\" text,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Artwork\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Artwork\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.Character",
+    "label": "Create table \"Character\"",
+    "summary": "Creates table \"Character\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Character"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Character\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Character\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"Character\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Character\"",
+        "sql": "CREATE TABLE \"public\".\"Character\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"danbooruTag\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Character\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"Character\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"Character\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.CharacterSchedule",
+    "label": "Create table \"CharacterSchedule\"",
+    "summary": "Creates table \"CharacterSchedule\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "CharacterSchedule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"CharacterSchedule\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"CharacterSchedule\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"CharacterSchedule\"",
+        "sql": "CREATE TABLE \"public\".\"CharacterSchedule\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"dayOfWeek\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userCharacterId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"CharacterSchedule\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"CharacterSchedule\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.DeliveryHistory",
+    "label": "Create table \"DeliveryHistory\"",
+    "summary": "Creates table \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"DeliveryHistory\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"DeliveryHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"DeliveryHistory\"",
+        "sql": "CREATE TABLE \"public\".\"DeliveryHistory\" (\n  \"artworkId\" int4 NOT NULL,\n  \"channelId\" text NOT NULL,\n  \"characterId\" int4,\n  \"deliveredAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"messageId\" text NOT NULL,\n  \"userId\" int4,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"DeliveryHistory\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"DeliveryHistory\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.DiscordUser",
+    "label": "Create table \"DiscordUser\"",
+    "summary": "Creates table \"DiscordUser\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "DiscordUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"DiscordUser\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DiscordUser\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"DiscordUser\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"DiscordUser\"",
+        "sql": "CREATE TABLE \"public\".\"DiscordUser\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"discordId\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"DiscordUser\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"DiscordUser\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"DiscordUser\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.GuildConfig",
+    "label": "Create table \"GuildConfig\"",
+    "summary": "Creates table \"GuildConfig\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "GuildConfig"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"GuildConfig\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"GuildConfig\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"GuildConfig\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"GuildConfig\"",
+        "sql": "CREATE TABLE \"public\".\"GuildConfig\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"deliveryChannelId\" text NOT NULL,\n  \"guildId\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"GuildConfig\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"GuildConfig\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"GuildConfig\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "table.UserCharacter",
+    "label": "Create table \"UserCharacter\"",
+    "summary": "Creates table \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"UserCharacter\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"UserCharacter\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"UserCharacter\"",
+        "sql": "CREATE TABLE \"public\".\"UserCharacter\" (\n  \"characterId\" int4 NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"UserCharacter\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"UserCharacter\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.Artwork.Artwork_source_sourceId_key",
+    "label": "Add unique constraint on \"Artwork\" (source, sourceId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Artwork_source_sourceId_key",
+        "table": "Artwork"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Artwork_source_sourceId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Artwork_source_sourceId_key",
+          "public",
+          "\"public\".\"Artwork\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Artwork_source_sourceId_key\" on \"Artwork\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Artwork_source_sourceId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Artwork\" ADD CONSTRAINT \"Artwork_source_sourceId_key\" UNIQUE (\"source\", \"sourceId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Artwork_source_sourceId_key\" exists on (source, sourceId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Artwork_source_sourceId_key",
+          "public",
+          "\"public\".\"Artwork\"",
+          "u",
+          "[\"source\",\"sourceId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Character.Character_danbooruTag_key",
+    "label": "Add unique constraint on \"Character\" (danbooruTag)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Character_danbooruTag_key",
+        "table": "Character"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Character_danbooruTag_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Character_danbooruTag_key",
+          "public",
+          "\"public\".\"Character\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"Character_danbooruTag_key\" on \"Character\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Character_danbooruTag_key\"",
+        "sql": "ALTER TABLE \"public\".\"Character\" ADD CONSTRAINT \"Character_danbooruTag_key\" UNIQUE (\"danbooruTag\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"Character_danbooruTag_key\" exists on (danbooruTag)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "Character_danbooruTag_key",
+          "public",
+          "\"public\".\"Character\"",
+          "u",
+          "[\"danbooruTag\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.CharacterSchedule.CharacterSchedule_userCharacterId_dayOfWeek_key",
+    "label": "Add unique constraint on \"CharacterSchedule\" (userCharacterId, dayOfWeek)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "CharacterSchedule_userCharacterId_dayOfWeek_key",
+        "table": "CharacterSchedule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"CharacterSchedule_userCharacterId_dayOfWeek_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CharacterSchedule_userCharacterId_dayOfWeek_key",
+          "public",
+          "\"public\".\"CharacterSchedule\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"CharacterSchedule_userCharacterId_dayOfWeek_key\" on \"CharacterSchedule\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"CharacterSchedule_userCharacterId_dayOfWeek_key\"",
+        "sql": "ALTER TABLE \"public\".\"CharacterSchedule\" ADD CONSTRAINT \"CharacterSchedule_userCharacterId_dayOfWeek_key\" UNIQUE (\"userCharacterId\", \"dayOfWeek\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"CharacterSchedule_userCharacterId_dayOfWeek_key\" exists on (userCharacterId, dayOfWeek)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "CharacterSchedule_userCharacterId_dayOfWeek_key",
+          "public",
+          "\"public\".\"CharacterSchedule\"",
+          "u",
+          "[\"userCharacterId\",\"dayOfWeek\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.DeliveryHistory.DeliveryHistory_userId_artworkId_key",
+    "label": "Add unique constraint on \"DeliveryHistory\" (userId, artworkId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "DeliveryHistory_userId_artworkId_key",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"DeliveryHistory_userId_artworkId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DeliveryHistory_userId_artworkId_key",
+          "public",
+          "\"public\".\"DeliveryHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"DeliveryHistory_userId_artworkId_key\" on \"DeliveryHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"DeliveryHistory_userId_artworkId_key\"",
+        "sql": "ALTER TABLE \"public\".\"DeliveryHistory\" ADD CONSTRAINT \"DeliveryHistory_userId_artworkId_key\" UNIQUE (\"userId\", \"artworkId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"DeliveryHistory_userId_artworkId_key\" exists on (userId, artworkId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "DeliveryHistory_userId_artworkId_key",
+          "public",
+          "\"public\".\"DeliveryHistory\"",
+          "u",
+          "[\"userId\",\"artworkId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.DiscordUser.DiscordUser_discordId_key",
+    "label": "Add unique constraint on \"DiscordUser\" (discordId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "DiscordUser_discordId_key",
+        "table": "DiscordUser"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"DiscordUser_discordId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DiscordUser_discordId_key",
+          "public",
+          "\"public\".\"DiscordUser\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"DiscordUser_discordId_key\" on \"DiscordUser\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"DiscordUser_discordId_key\"",
+        "sql": "ALTER TABLE \"public\".\"DiscordUser\" ADD CONSTRAINT \"DiscordUser_discordId_key\" UNIQUE (\"discordId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"DiscordUser_discordId_key\" exists on (discordId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "DiscordUser_discordId_key",
+          "public",
+          "\"public\".\"DiscordUser\"",
+          "u",
+          "[\"discordId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.GuildConfig.GuildConfig_guildId_key",
+    "label": "Add unique constraint on \"GuildConfig\" (guildId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "GuildConfig_guildId_key",
+        "table": "GuildConfig"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"GuildConfig_guildId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "GuildConfig_guildId_key",
+          "public",
+          "\"public\".\"GuildConfig\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"GuildConfig_guildId_key\" on \"GuildConfig\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"GuildConfig_guildId_key\"",
+        "sql": "ALTER TABLE \"public\".\"GuildConfig\" ADD CONSTRAINT \"GuildConfig_guildId_key\" UNIQUE (\"guildId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"GuildConfig_guildId_key\" exists on (guildId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "GuildConfig_guildId_key",
+          "public",
+          "\"public\".\"GuildConfig\"",
+          "u",
+          "[\"guildId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.UserCharacter.UserCharacter_userId_characterId_key",
+    "label": "Add unique constraint on \"UserCharacter\" (userId, characterId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "UserCharacter_userId_characterId_key",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"UserCharacter_userId_characterId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserCharacter_userId_characterId_key",
+          "public",
+          "\"public\".\"UserCharacter\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"UserCharacter_userId_characterId_key\" on \"UserCharacter\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"UserCharacter_userId_characterId_key\"",
+        "sql": "ALTER TABLE \"public\".\"UserCharacter\" ADD CONSTRAINT \"UserCharacter_userId_characterId_key\" UNIQUE (\"userId\", \"characterId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"UserCharacter_userId_characterId_key\" exists on (userId, characterId)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "UserCharacter_userId_characterId_key",
+          "public",
+          "\"public\".\"UserCharacter\"",
+          "u",
+          "[\"userId\",\"characterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Artwork.Artwork_rating_idx_fcb0b199",
+    "label": "Create index \"Artwork_rating_idx_fcb0b199\" on \"Artwork\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Artwork_rating_idx_fcb0b199",
+        "table": "Artwork"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Artwork_rating_idx_fcb0b199\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork_rating_idx_fcb0b199\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Artwork_rating_idx_fcb0b199\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Artwork_rating_idx_fcb0b199\"",
+        "sql": "CREATE INDEX \"Artwork_rating_idx_fcb0b199\" ON \"public\".\"Artwork\" (\"rating\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Artwork_rating_idx_fcb0b199\" exists on \"Artwork\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork_rating_idx_fcb0b199\"",
+          "i",
+          "I",
+          "\"public\".\"Artwork\"",
+          "btree",
+          "[\"rating\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Artwork.Artwork_score_idx_341b473a",
+    "label": "Create index \"Artwork_score_idx_341b473a\" on \"Artwork\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Artwork_score_idx_341b473a",
+        "table": "Artwork"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Artwork_score_idx_341b473a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork_score_idx_341b473a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"Artwork_score_idx_341b473a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Artwork_score_idx_341b473a\"",
+        "sql": "CREATE INDEX \"Artwork_score_idx_341b473a\" ON \"public\".\"Artwork\" (\"score\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Artwork_score_idx_341b473a\" exists on \"Artwork\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"Artwork_score_idx_341b473a\"",
+          "i",
+          "I",
+          "\"public\".\"Artwork\"",
+          "btree",
+          "[\"score\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CharacterSchedule.CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980",
+    "label": "Create index \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\" on \"CharacterSchedule\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980",
+        "table": "CharacterSchedule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\"",
+        "sql": "CREATE INDEX \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\" ON \"public\".\"CharacterSchedule\" (\"dayOfWeek\", \"isActive\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\" exists on \"CharacterSchedule\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule_dayOfWeek_isActive_idx_7bcf8980\"",
+          "i",
+          "I",
+          "\"public\".\"CharacterSchedule\"",
+          "btree",
+          "[\"dayOfWeek\",\"isActive\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CharacterSchedule.CharacterSchedule_userCharacterId_idx_aff81178",
+    "label": "Create index \"CharacterSchedule_userCharacterId_idx_aff81178\" on \"CharacterSchedule\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CharacterSchedule_userCharacterId_idx_aff81178",
+        "table": "CharacterSchedule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CharacterSchedule_userCharacterId_idx_aff81178\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule_userCharacterId_idx_aff81178\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"CharacterSchedule_userCharacterId_idx_aff81178\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CharacterSchedule_userCharacterId_idx_aff81178\"",
+        "sql": "CREATE INDEX \"CharacterSchedule_userCharacterId_idx_aff81178\" ON \"public\".\"CharacterSchedule\" (\"userCharacterId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CharacterSchedule_userCharacterId_idx_aff81178\" exists on \"CharacterSchedule\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"CharacterSchedule_userCharacterId_idx_aff81178\"",
+          "i",
+          "I",
+          "\"public\".\"CharacterSchedule\"",
+          "btree",
+          "[\"userCharacterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DeliveryHistory.DeliveryHistory_artworkId_idx_d1231e6d",
+    "label": "Create index \"DeliveryHistory_artworkId_idx_d1231e6d\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DeliveryHistory_artworkId_idx_d1231e6d",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DeliveryHistory_artworkId_idx_d1231e6d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_artworkId_idx_d1231e6d\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"DeliveryHistory_artworkId_idx_d1231e6d\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DeliveryHistory_artworkId_idx_d1231e6d\"",
+        "sql": "CREATE INDEX \"DeliveryHistory_artworkId_idx_d1231e6d\" ON \"public\".\"DeliveryHistory\" (\"artworkId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DeliveryHistory_artworkId_idx_d1231e6d\" exists on \"DeliveryHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_artworkId_idx_d1231e6d\"",
+          "i",
+          "I",
+          "\"public\".\"DeliveryHistory\"",
+          "btree",
+          "[\"artworkId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DeliveryHistory.DeliveryHistory_characterId_idx_2423fe9d",
+    "label": "Create index \"DeliveryHistory_characterId_idx_2423fe9d\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DeliveryHistory_characterId_idx_2423fe9d",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DeliveryHistory_characterId_idx_2423fe9d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_characterId_idx_2423fe9d\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"DeliveryHistory_characterId_idx_2423fe9d\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DeliveryHistory_characterId_idx_2423fe9d\"",
+        "sql": "CREATE INDEX \"DeliveryHistory_characterId_idx_2423fe9d\" ON \"public\".\"DeliveryHistory\" (\"characterId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DeliveryHistory_characterId_idx_2423fe9d\" exists on \"DeliveryHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_characterId_idx_2423fe9d\"",
+          "i",
+          "I",
+          "\"public\".\"DeliveryHistory\"",
+          "btree",
+          "[\"characterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DeliveryHistory.DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095",
+    "label": "Create index \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\"",
+        "sql": "CREATE INDEX \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\" ON \"public\".\"DeliveryHistory\" (\"userId\", \"characterId\", \"deliveredAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\" exists on \"DeliveryHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_characterId_deliveredAt_idx_c8112095\"",
+          "i",
+          "I",
+          "\"public\".\"DeliveryHistory\"",
+          "btree",
+          "[\"userId\",\"characterId\",\"deliveredAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DeliveryHistory.DeliveryHistory_userId_deliveredAt_idx_c60c106a",
+    "label": "Create index \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DeliveryHistory_userId_deliveredAt_idx_c60c106a",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_deliveredAt_idx_c60c106a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\"",
+        "sql": "CREATE INDEX \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\" ON \"public\".\"DeliveryHistory\" (\"userId\", \"deliveredAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DeliveryHistory_userId_deliveredAt_idx_c60c106a\" exists on \"DeliveryHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_deliveredAt_idx_c60c106a\"",
+          "i",
+          "I",
+          "\"public\".\"DeliveryHistory\"",
+          "btree",
+          "[\"userId\",\"deliveredAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DeliveryHistory.DeliveryHistory_userId_idx_a489d58a",
+    "label": "Create index \"DeliveryHistory_userId_idx_a489d58a\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DeliveryHistory_userId_idx_a489d58a",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DeliveryHistory_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"DeliveryHistory_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DeliveryHistory_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"DeliveryHistory_userId_idx_a489d58a\" ON \"public\".\"DeliveryHistory\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DeliveryHistory_userId_idx_a489d58a\" exists on \"DeliveryHistory\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"DeliveryHistory_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"DeliveryHistory\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserCharacter.UserCharacter_characterId_idx_2423fe9d",
+    "label": "Create index \"UserCharacter_characterId_idx_2423fe9d\" on \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserCharacter_characterId_idx_2423fe9d",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserCharacter_characterId_idx_2423fe9d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_characterId_idx_2423fe9d\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserCharacter_characterId_idx_2423fe9d\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserCharacter_characterId_idx_2423fe9d\"",
+        "sql": "CREATE INDEX \"UserCharacter_characterId_idx_2423fe9d\" ON \"public\".\"UserCharacter\" (\"characterId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserCharacter_characterId_idx_2423fe9d\" exists on \"UserCharacter\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_characterId_idx_2423fe9d\"",
+          "i",
+          "I",
+          "\"public\".\"UserCharacter\"",
+          "btree",
+          "[\"characterId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserCharacter.UserCharacter_userId_idx_a489d58a",
+    "label": "Create index \"UserCharacter_userId_idx_a489d58a\" on \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserCharacter_userId_idx_a489d58a",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserCharacter_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserCharacter_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserCharacter_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"UserCharacter_userId_idx_a489d58a\" ON \"public\".\"UserCharacter\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserCharacter_userId_idx_a489d58a\" exists on \"UserCharacter\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"UserCharacter\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserCharacter.UserCharacter_userId_isActive_idx_c5d1c334",
+    "label": "Create index \"UserCharacter_userId_isActive_idx_c5d1c334\" on \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserCharacter_userId_isActive_idx_c5d1c334",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserCharacter_userId_isActive_idx_c5d1c334\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_userId_isActive_idx_c5d1c334\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"UserCharacter_userId_isActive_idx_c5d1c334\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserCharacter_userId_isActive_idx_c5d1c334\"",
+        "sql": "CREATE INDEX \"UserCharacter_userId_isActive_idx_c5d1c334\" ON \"public\".\"UserCharacter\" (\"userId\", \"isActive\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserCharacter_userId_isActive_idx_c5d1c334\" exists on \"UserCharacter\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"UserCharacter_userId_isActive_idx_c5d1c334\"",
+          "i",
+          "I",
+          "\"public\".\"UserCharacter\"",
+          "btree",
+          "[\"userId\",\"isActive\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CharacterSchedule.CharacterSchedule_userCharacterId_fkey",
+    "label": "Add foreign key \"CharacterSchedule_userCharacterId_fkey\" on \"CharacterSchedule\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CharacterSchedule_userCharacterId_fkey",
+        "table": "CharacterSchedule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CharacterSchedule_userCharacterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CharacterSchedule_userCharacterId_fkey",
+          "public",
+          "\"public\".\"CharacterSchedule\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"CharacterSchedule_userCharacterId_fkey\" on \"CharacterSchedule\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CharacterSchedule_userCharacterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CharacterSchedule\"\nADD CONSTRAINT \"CharacterSchedule_userCharacterId_fkey\"\nFOREIGN KEY (\"userCharacterId\")\nREFERENCES \"public\".\"UserCharacter\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CharacterSchedule_userCharacterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "CharacterSchedule_userCharacterId_fkey",
+          "public",
+          "\"public\".\"CharacterSchedule\"",
+          "f",
+          "[\"userCharacterId\"]",
+          "\"public\".\"UserCharacter\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.DeliveryHistory.DeliveryHistory_userId_fkey",
+    "label": "Add foreign key \"DeliveryHistory_userId_fkey\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "DeliveryHistory_userId_fkey",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"DeliveryHistory_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DeliveryHistory_userId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"DeliveryHistory_userId_fkey\" on \"DeliveryHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"DeliveryHistory_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"DeliveryHistory\"\nADD CONSTRAINT \"DeliveryHistory_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"DiscordUser\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"DeliveryHistory_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "DeliveryHistory_userId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"DiscordUser\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.DeliveryHistory.DeliveryHistory_characterId_fkey",
+    "label": "Add foreign key \"DeliveryHistory_characterId_fkey\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "DeliveryHistory_characterId_fkey",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"DeliveryHistory_characterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DeliveryHistory_characterId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"DeliveryHistory_characterId_fkey\" on \"DeliveryHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"DeliveryHistory_characterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"DeliveryHistory\"\nADD CONSTRAINT \"DeliveryHistory_characterId_fkey\"\nFOREIGN KEY (\"characterId\")\nREFERENCES \"public\".\"Character\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"DeliveryHistory_characterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "DeliveryHistory_characterId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\"",
+          "f",
+          "[\"characterId\"]",
+          "\"public\".\"Character\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.DeliveryHistory.DeliveryHistory_artworkId_fkey",
+    "label": "Add foreign key \"DeliveryHistory_artworkId_fkey\" on \"DeliveryHistory\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "DeliveryHistory_artworkId_fkey",
+        "table": "DeliveryHistory"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"DeliveryHistory_artworkId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DeliveryHistory_artworkId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"DeliveryHistory_artworkId_fkey\" on \"DeliveryHistory\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"DeliveryHistory_artworkId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"DeliveryHistory\"\nADD CONSTRAINT \"DeliveryHistory_artworkId_fkey\"\nFOREIGN KEY (\"artworkId\")\nREFERENCES \"public\".\"Artwork\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"DeliveryHistory_artworkId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "DeliveryHistory_artworkId_fkey",
+          "public",
+          "\"public\".\"DeliveryHistory\"",
+          "f",
+          "[\"artworkId\"]",
+          "\"public\".\"Artwork\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserCharacter.UserCharacter_userId_fkey",
+    "label": "Add foreign key \"UserCharacter_userId_fkey\" on \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserCharacter_userId_fkey",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserCharacter_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserCharacter_userId_fkey",
+          "public",
+          "\"public\".\"UserCharacter\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserCharacter_userId_fkey\" on \"UserCharacter\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserCharacter_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserCharacter\"\nADD CONSTRAINT \"UserCharacter_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"DiscordUser\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserCharacter_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserCharacter_userId_fkey",
+          "public",
+          "\"public\".\"UserCharacter\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"DiscordUser\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserCharacter.UserCharacter_characterId_fkey",
+    "label": "Add foreign key \"UserCharacter_characterId_fkey\" on \"UserCharacter\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserCharacter_characterId_fkey",
+        "table": "UserCharacter"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserCharacter_characterId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserCharacter_characterId_fkey",
+          "public",
+          "\"public\".\"UserCharacter\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"UserCharacter_characterId_fkey\" on \"UserCharacter\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserCharacter_characterId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserCharacter\"\nADD CONSTRAINT \"UserCharacter_characterId_fkey\"\nFOREIGN KEY (\"characterId\")\nREFERENCES \"public\".\"Character\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserCharacter_characterId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "UserCharacter_characterId_fkey",
+          "public",
+          "\"public\".\"UserCharacter\"",
+          "f",
+          "[\"characterId\"]",
+          "\"public\".\"Character\"",
+          "[\"id\"]",
+          "a",
+          "a"
+        ]
+      }
+    ]
+  }
+]

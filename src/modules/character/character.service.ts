@@ -1,5 +1,11 @@
 import { validateDanbooruCharacterTag } from "../../integrations/danbooru/danbooru.service";
-import { DAY_CODE_TO_NUMBER, type DayCode } from "../../shared/utils/date";
+import {
+  DAY_CODE_TO_NUMBER,
+  type DayCode,
+  getEarliestWeekdaySortKey,
+  sortWeekdayNumbers,
+  WEEKDAY_MON_FIRST_ORDER,
+} from "../../shared/utils/date";
 import {
   CharacterAlreadyExistsError,
   CharacterNotFoundError,
@@ -20,15 +26,81 @@ import {
 } from "./character.repository";
 
 /**
+ * Replaces all weekday schedules for a user-character link using a delete-and-insert
+ * strategy so the persisted schedule matches the provided authoritative day list.
+ */
+async function replaceUserCharacterSchedules(
+  userCharacterId: number,
+  days: readonly DayCode[],
+) {
+  const uniqueDays = [...new Set(days)];
+
+  if (uniqueDays.length === 0) {
+    throw new Error("Invalid days. Use: mon,tue,wed,thu,fri,sat,sun");
+  }
+
+  await deleteCharacterSchedules(userCharacterId);
+
+  const schedules = [];
+
+  for (const day of uniqueDays) {
+    schedules.push(
+      await addCharacterSchedule(userCharacterId, DAY_CODE_TO_NUMBER[day]),
+    );
+  }
+
+  return schedules;
+}
+
+/**
+ * Compares two character schedule lists using Monday-first weekday rank so
+ * characters scheduled earlier in the week appear first (unscheduled last).
+ */
+function compareCharacterSchedules(
+  a: { name: string; schedules: number[] },
+  b: { name: string; schedules: number[] },
+): number {
+  const earliestDiff =
+    getEarliestWeekdaySortKey(a.schedules) -
+    getEarliestWeekdaySortKey(b.schedules);
+
+  if (earliestDiff !== 0) return earliestDiff;
+
+  const minLength = Math.min(a.schedules.length, b.schedules.length);
+
+  for (let i = 0; i < minLength; i++) {
+    const rankA = WEEKDAY_MON_FIRST_ORDER[a.schedules[i]!] ?? Number.MAX_SAFE_INTEGER;
+    const rankB = WEEKDAY_MON_FIRST_ORDER[b.schedules[i]!] ?? Number.MAX_SAFE_INTEGER;
+
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+  }
+
+  if (a.schedules.length !== b.schedules.length) {
+    return a.schedules.length - b.schedules.length;
+  }
+
+  return a.name.localeCompare(b.name);
+}
+
+/**
  * Validates the Danbooru tag remotely, ensures the character exists in the
- * shared catalog, and links it to the user (reactivating a previously removed
- * link if one exists).
+ * shared catalog, links (or reactivates) it for the user, and configures the
+ * initial delivery schedule in one flow.
  */
 export async function addCharacterToUser(
   discordId: string,
   name: string,
   danbooruTag: string,
+  days: readonly DayCode[],
 ) {
+  const uniqueDays = [...new Set(days)];
+
+  if (uniqueDays.length === 0) {
+    throw new Error("Invalid days. Use: mon,tue,wed,thu,fri,sat,sun");
+  }
+
   const danbooruTagData = await validateDanbooruCharacterTag(danbooruTag);
   const user = await findOrCreateDiscordUser(discordId);
 
@@ -46,26 +118,35 @@ export async function addCharacterToUser(
 
   if (existing) {
     const reactivated = await updateUserCharacterStatus(existing.id, true);
+    const schedules = await replaceUserCharacterSchedules(
+      reactivated?.id ?? existing.id,
+      uniqueDays,
+    );
 
     return {
       character,
       userCharacter: reactivated,
       reactivated: true,
+      schedules,
     };
   }
 
   const userCharacter = await addUserCharacter(user.id, character.id);
+  const schedules = await replaceUserCharacterSchedules(
+    userCharacter.id,
+    uniqueDays,
+  );
 
   return {
     character,
     userCharacter,
     reactivated: false,
+    schedules,
   };
 }
 
 /**
- * Replaces a user's delivery days for an active character using a delete-and-insert
- * strategy so callers always provide the full authoritative weekly schedule.
+ * Replaces a user's delivery days for an active character.
  */
 export async function setCharacterSchedule(
   discordId: string,
@@ -91,21 +172,12 @@ export async function setCharacterSchedule(
     throw new CharacterNotInListError();
   }
 
-  await deleteCharacterSchedules(userCharacter.id);
-
-  const schedules = [];
-
-  for (const day of uniqueDays) {
-    schedules.push(
-      await addCharacterSchedule(userCharacter.id, DAY_CODE_TO_NUMBER[day]),
-    );
-  }
-
-  return schedules;
+  return replaceUserCharacterSchedules(userCharacter.id, uniqueDays);
 }
 
 /**
- * Lists all active characters and their configured weekday numbers for a user.
+ * Lists all active characters for a user, ordered Monday-to-Sunday by their
+ * scheduled delivery days (with unscheduled characters placed at the end).
  */
 export async function listUserCharacters(discordId: string) {
   const user = await findOrCreateDiscordUser(discordId);
@@ -122,14 +194,16 @@ export async function listUserCharacters(discordId: string) {
 
       return {
         ...character,
-        schedules: schedules.map((schedule) => schedule.dayOfWeek),
+        schedules: sortWeekdayNumbers(
+          schedules.map((schedule) => schedule.dayOfWeek),
+        ),
       };
     }),
   );
 
-  return items.filter(
-    (item): item is NonNullable<typeof item> => item !== null,
-  );
+  return items
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort(compareCharacterSchedules);
 }
 
 /**

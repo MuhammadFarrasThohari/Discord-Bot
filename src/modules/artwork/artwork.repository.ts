@@ -1,6 +1,10 @@
 import type { DanbooruPost } from "../../integrations/danbooru/danbooru.types";
 import { db } from "../../prisma/db";
 
+export async function findArtworkById(id: number) {
+  return db.orm.public.Artwork.where({ id }).first();
+}
+
 export async function findArtworkBySourceId(sourceId: string) {
   return db.orm.public.Artwork.where({
     source: "danbooru",

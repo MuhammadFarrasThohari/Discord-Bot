@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatWeekdayNumbers,
+  getEarliestWeekdaySortKey,
   getJakartaDateRange,
   getJakartaDayOfWeek,
+  sortWeekdayNumbers,
 } from "../shared/utils/date";
 
 describe("date utilities (Asia/Jakarta)", () => {
@@ -22,5 +25,12 @@ describe("date utilities (Asia/Jakarta)", () => {
 
     expect(startOfDay.toISOString()).toBe("2026-11-25T17:00:00.000Z");
     expect(endOfDay.toISOString()).toBe("2026-11-26T17:00:00.000Z");
+  });
+
+  it("sorts and formats weekdays in Monday-to-Sunday order", () => {
+    expect(sortWeekdayNumbers([0, 5, 1, 5, 3])).toEqual([1, 3, 5, 0]);
+    expect(formatWeekdayNumbers([0, 5, 1])).toBe("Mon, Fri, Sun");
+    expect(getEarliestWeekdaySortKey([0, 5])).toBe(4);
+    expect(getEarliestWeekdaySortKey([])).toBe(Number.MAX_SAFE_INTEGER);
   });
 });

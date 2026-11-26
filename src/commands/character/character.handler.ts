@@ -1,4 +1,7 @@
-import type { ChatInputCommandInteraction } from "discord.js";
+import {
+  type ChatInputCommandInteraction,
+  ComponentType,
+} from "discord.js";
 
 import {
   addCharacterToUser,
@@ -12,8 +15,17 @@ import {
   characterTagSchema,
 } from "../../modules/character/character.validation";
 import { AppError } from "../../shared/errors/app-error";
-import { DAY_NUMBER_TO_LABEL } from "../../shared/utils/date";
+import { formatWeekdayNumbers } from "../../shared/utils/date";
 import { formatZodIssues } from "../../shared/utils/validation";
+import {
+  buildCharacterListEmbed,
+  buildCharacterListPaginationRow,
+  CHARACTER_LIST_NEXT_BUTTON_ID,
+  CHARACTER_LIST_PAGE_SIZE,
+  CHARACTER_LIST_PREV_BUTTON_ID,
+} from "./character.list.embed";
+
+const PAGINATION_TIMEOUT_MS = 120_000;
 
 /**
  * Returns user-safe messages for expected `AppError` instances while masking
@@ -33,6 +45,7 @@ async function handleAddSubcommand(interaction: ChatInputCommandInteraction) {
   const input = characterAddSchema.safeParse({
     name: interaction.options.getString("name"),
     danbooruTag: interaction.options.getString("tag"),
+    days: interaction.options.getString("days"),
   });
 
   if (!input.success) {
@@ -44,12 +57,17 @@ async function handleAddSubcommand(interaction: ChatInputCommandInteraction) {
     interaction.user.id,
     input.data.name,
     input.data.danbooruTag,
+    input.data.days,
+  );
+
+  const scheduleSummary = formatWeekdayNumbers(
+    result.schedules.map((schedule) => schedule.dayOfWeek),
   );
 
   await interaction.editReply(
     result.reactivated
-      ? `Reactivated **${result.character.name}**!`
-      : `Added **${result.character.name}** to your character list!`,
+      ? `Reactivated **${result.character.name}** with schedule: **${scheduleSummary}**!`
+      : `Added **${result.character.name}** to your character list with schedule: **${scheduleSummary}**!`,
   );
 }
 
@@ -75,6 +93,10 @@ async function handleRemoveSubcommand(
   );
 }
 
+/**
+ * Renders the user's sorted character list inside a Discord Embed with interactive
+ * Previous/Next pagination when the list exceeds `CHARACTER_LIST_PAGE_SIZE`.
+ */
 async function handleListSubcommand(interaction: ChatInputCommandInteraction) {
   const characters = await listUserCharacters(interaction.user.id);
 
@@ -85,19 +107,58 @@ async function handleListSubcommand(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const lines = characters.map((character) => {
-    const schedules = character.schedules
-      .map((day) => DAY_NUMBER_TO_LABEL[day])
-      .filter(Boolean)
-      .join(", ");
+  const totalPages = Math.ceil(characters.length / CHARACTER_LIST_PAGE_SIZE);
+  let currentPage = 0;
 
-    return (
-      `• **${character.name}** (\`${character.danbooruTag}\`)\n` +
-      `  Schedule: ${schedules || "Not scheduled"}`
-    );
+  if (totalPages <= 1) {
+    await interaction.editReply({
+      embeds: [buildCharacterListEmbed(characters, currentPage, totalPages)],
+    });
+    return;
+  }
+
+  const reply = await interaction.editReply({
+    embeds: [buildCharacterListEmbed(characters, currentPage, totalPages)],
+    components: [buildCharacterListPaginationRow(currentPage, totalPages)],
   });
 
-  await interaction.editReply(`**Your Characters**\n\n${lines.join("\n")}`);
+  const collector = reply.createMessageComponentCollector({
+    componentType: ComponentType.Button,
+    time: PAGINATION_TIMEOUT_MS,
+  });
+
+  collector.on("collect", async (buttonInteraction) => {
+    if (buttonInteraction.user.id !== interaction.user.id) {
+      await buttonInteraction.reply({
+        content: "You cannot control another user's character list.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (buttonInteraction.customId === CHARACTER_LIST_PREV_BUTTON_ID) {
+      currentPage = Math.max(0, currentPage - 1);
+    } else if (buttonInteraction.customId === CHARACTER_LIST_NEXT_BUTTON_ID) {
+      currentPage = Math.min(totalPages - 1, currentPage + 1);
+    }
+
+    await buttonInteraction.update({
+      embeds: [buildCharacterListEmbed(characters, currentPage, totalPages)],
+      components: [buildCharacterListPaginationRow(currentPage, totalPages)],
+    });
+  });
+
+  collector.on("end", async () => {
+    try {
+      await interaction.editReply({
+        components: [
+          buildCharacterListPaginationRow(currentPage, totalPages, true),
+        ],
+      });
+    } catch {
+      // Ignore failures when the ephemeral interaction token or message expired.
+    }
+  });
 }
 
 async function handleScheduleSubcommand(
@@ -119,8 +180,12 @@ async function handleScheduleSubcommand(
     input.data.days,
   );
 
+  const scheduleSummary = formatWeekdayNumbers(
+    schedules.map((schedule) => schedule.dayOfWeek),
+  );
+
   await interaction.editReply(
-    `Schedule updated successfully! **${schedules.length}** day(s) configured.`,
+    `Schedule updated successfully! **${schedules.length}** day(s) configured: **${scheduleSummary}**.`,
   );
 }
 
