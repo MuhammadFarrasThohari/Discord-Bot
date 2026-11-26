@@ -98,6 +98,7 @@ export async function hasUserReceivedArtwork(
 
 export async function createDeliveryHistory(data: {
   userId: number;
+  characterId: number;
   artworkId: number;
   channelId: string;
   messageId: string;
@@ -156,7 +157,11 @@ export async function getScheduledCharactersForUser(
   };
 }
 
-export async function getUserDeliveryForDate(
+/**
+ * Returns all delivery history rows recorded for a user within `[startOfDay, endOfDay)`
+ * so callers can determine which scheduled characters have already been delivered today.
+ */
+export async function getUserDeliveriesForDate(
   userId: number,
   startOfDay: Date,
   endOfDay: Date,
@@ -164,5 +169,5 @@ export async function getUserDeliveryForDate(
   return db.orm.public.DeliveryHistory.where({ userId })
     .where((history) => history.deliveredAt.gte(startOfDay))
     .where((history) => history.deliveredAt.lt(endOfDay))
-    .first();
+    .all();
 }

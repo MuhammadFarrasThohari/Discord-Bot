@@ -10,7 +10,7 @@ export const characterCommand = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("add")
-      .setDescription("Add a character to your list")
+      .setDescription("Add a character and set its delivery days")
       .addStringOption((option) =>
         option
           .setName("name")
@@ -24,6 +24,12 @@ export const characterCommand = new SlashCommandBuilder()
           .setDescription("Danbooru tag, e.g. furina_(genshin_impact)")
           .setRequired(true)
           .setMaxLength(100),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("days")
+          .setDescription("Delivery days: mon,tue,wed,thu,fri,sat,sun")
+          .setRequired(true),
       ),
   )
 

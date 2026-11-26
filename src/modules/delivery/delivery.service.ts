@@ -8,6 +8,7 @@ import {
   getJakartaDayOfWeek,
 } from "../../shared/utils/date";
 import {
+  findArtworkById,
   findArtworkBySourceId,
   saveDanbooruArtwork,
 } from "../artwork/artwork.repository";
@@ -18,7 +19,7 @@ import {
   findActiveDiscordUserByDiscordId,
   getScheduledCharactersForDay,
   getScheduledCharactersForUser,
-  getUserDeliveryForDate,
+  getUserDeliveriesForDate,
   hasUserReceivedArtwork,
   type ScheduledCharacterInfo,
   type ScheduledDeliveryTarget,
@@ -42,16 +43,11 @@ export type DeliverTodayResult =
     }
   | {
       status: "delivered";
+      deliveredCharacters: string[];
     }
   | {
       status: "no-artwork";
     };
-
-async function getExistingDailyDelivery(userId: number) {
-  const { startOfDay, endOfDay } = getJakartaDateRange();
-
-  return getUserDeliveryForDate(userId, startOfDay, endOfDay);
-}
 
 async function getOrCreateDanbooruArtwork(post: DanbooruPost) {
   const existing = await findArtworkBySourceId(String(post.id));
@@ -62,7 +58,73 @@ async function getOrCreateDanbooruArtwork(post: DanbooruPost) {
 }
 
 /**
- * Selects at most one unseen SFW artwork for each scheduled character of a user.
+ * Filters `scheduledCharacters` down to characters that have not yet been
+ * delivered to `userId` on the current Jakarta calendar day.
+ *
+ * Uses `DeliveryHistory.characterId` when present, and falls back to matching
+ * `Artwork.tagString` for legacy history rows created before `characterId` existed.
+ */
+async function filterPendingCharactersForToday(
+  userId: number,
+  scheduledCharacters: readonly ScheduledCharacterInfo[],
+) {
+  const { startOfDay, endOfDay } = getJakartaDateRange();
+  const existingDeliveries = await getUserDeliveriesForDate(
+    userId,
+    startOfDay,
+    endOfDay,
+  );
+
+  if (existingDeliveries.length === 0) {
+    return {
+      pendingCharacters: [...scheduledCharacters],
+      existingDeliveries,
+    };
+  }
+
+  const deliveredCharacterIds = new Set<number>();
+  const legacyDeliveries = [];
+
+  for (const delivery of existingDeliveries) {
+    if (delivery.characterId !== null && delivery.characterId !== undefined) {
+      deliveredCharacterIds.add(delivery.characterId);
+    } else {
+      legacyDeliveries.push(delivery);
+    }
+  }
+
+  const legacyDeliveredTags = new Set<string>();
+
+  if (legacyDeliveries.length > 0) {
+    const legacyArtworks = await Promise.all(
+      legacyDeliveries.map((delivery) => findArtworkById(delivery.artworkId)),
+    );
+
+    for (const artwork of legacyArtworks) {
+      if (!artwork?.tagString) continue;
+
+      for (const tag of artwork.tagString.split(/\s+/)) {
+        if (tag) {
+          legacyDeliveredTags.add(tag.toLowerCase());
+        }
+      }
+    }
+  }
+
+  const pendingCharacters = scheduledCharacters.filter(
+    (character) =>
+      !deliveredCharacterIds.has(character.id) &&
+      !legacyDeliveredTags.has(character.danbooruTag.toLowerCase()),
+  );
+
+  return {
+    pendingCharacters,
+    existingDeliveries,
+  };
+}
+
+/**
+ * Selects at most one unseen SFW artwork for each pending scheduled character.
  * Characters and fetched posts are shuffled so repeated schedules vary naturally,
  * and `DeliveryHistory` prevents sending duplicate artworks to the same user.
  */
@@ -149,13 +211,14 @@ async function buildPendingDeliveriesForUser(
 
 /**
  * Sends all prepared character artworks for a single user and records each
- * delivered message in `DeliveryHistory` immediately after Discord confirms send.
+ * delivered message (including `characterId`) in `DeliveryHistory`.
  */
 async function deliverToUser(
   target: ScheduledDeliveryTarget,
   channel: DeliveryChannel,
-): Promise<boolean> {
+): Promise<ScheduledCharacterInfo[]> {
   const pendingMessages = await buildPendingDeliveriesForUser(target);
+  const sentCharacters: ScheduledCharacterInfo[] = [];
 
   for (const message of pendingMessages) {
     try {
@@ -163,10 +226,13 @@ async function deliverToUser(
 
       await createDeliveryHistory({
         userId: target.userId,
+        characterId: message.character.id,
         artworkId: message.artworkId,
         channelId: sentMessage.channel.id,
         messageId: sentMessage.id,
       });
+
+      sentCharacters.push(message.character);
 
       console.log(
         `[DELIVERY] Successfully sent message for ${message.character.name} to ${target.discordId}`,
@@ -179,14 +245,14 @@ async function deliverToUser(
     }
   }
 
-  return pendingMessages.length > 0;
+  return sentCharacters;
 }
 
 /**
  * Runs the scheduled daily artwork delivery for all users with active schedules
  * on the current Jakarta weekday. Users are processed sequentially to avoid
- * bursting Discord channel message rate limits, and users who already received
- * a delivery today (e.g. via `/waifu today`) are skipped.
+ * bursting Discord channel message rate limits, and only characters not yet
+ * delivered today (e.g. via `/waifu today`) are sent.
  */
 export async function deliverDailyArtworks(client: Client) {
   const dayOfWeek = getJakartaDayOfWeek();
@@ -204,16 +270,22 @@ export async function deliverDailyArtworks(client: Client) {
 
   for (const target of targets) {
     try {
-      const existingDelivery = await getExistingDailyDelivery(target.userId);
+      const { pendingCharacters } = await filterPendingCharactersForToday(
+        target.userId,
+        target.characters,
+      );
 
-      if (existingDelivery) {
+      if (pendingCharacters.length === 0) {
         results.skipped++;
         continue;
       }
 
-      const delivered = await deliverToUser(target, channel);
+      const delivered = await deliverToUser(
+        { ...target, characters: pendingCharacters },
+        channel,
+      );
 
-      if (delivered) {
+      if (delivered.length > 0) {
         results.success++;
       } else {
         results.skipped++;
@@ -230,9 +302,9 @@ export async function deliverDailyArtworks(client: Client) {
 }
 
 /**
- * Handles on-demand `/waifu today` requests. Enforces a once-per-Jakarta-day
- * cooldown by checking `DeliveryHistory` before resolving scheduled characters
- * and delivering to the configured guild channel.
+ * Handles on-demand `/waifu today` requests. Checks per-character delivery
+ * history for the current Jakarta day so any newly added or previously missed
+ * scheduled characters are still delivered without duplicating already-sent ones.
  */
 export async function deliverTodayArtwork(
   client: Client,
@@ -245,20 +317,6 @@ export async function deliverTodayArtwork(
     return { status: "no-schedule" };
   }
 
-  // Enforce daily cooldown before querying Danbooru or sending messages.
-  const existingDelivery = await getExistingDailyDelivery(user.id);
-
-  if (existingDelivery) {
-    return {
-      status: "already-delivered",
-      messageUrl: createMessageUrl(
-        guildId,
-        existingDelivery.channelId,
-        existingDelivery.messageId,
-      ),
-    };
-  }
-
   const dayOfWeek = getJakartaDayOfWeek();
   const target = await getScheduledCharactersForUser(discordId, dayOfWeek);
 
@@ -266,12 +324,38 @@ export async function deliverTodayArtwork(
     return { status: "no-schedule" };
   }
 
-  const channel = await getConfiguredDeliveryChannel(client, guildId);
-  const delivered = await deliverToUser(target, channel);
+  const { pendingCharacters, existingDeliveries } =
+    await filterPendingCharactersForToday(user.id, target.characters);
 
-  if (!delivered) {
+  if (pendingCharacters.length === 0) {
+    const latestDelivery = existingDeliveries.reduce((latest, current) =>
+      current.deliveredAt.getTime() >= latest.deliveredAt.getTime()
+        ? current
+        : latest,
+    );
+
+    return {
+      status: "already-delivered",
+      messageUrl: createMessageUrl(
+        guildId,
+        latestDelivery.channelId,
+        latestDelivery.messageId,
+      ),
+    };
+  }
+
+  const channel = await getConfiguredDeliveryChannel(client, guildId);
+  const delivered = await deliverToUser(
+    { ...target, characters: pendingCharacters },
+    channel,
+  );
+
+  if (delivered.length === 0) {
     return { status: "no-artwork" };
   }
 
-  return { status: "delivered" };
+  return {
+    status: "delivered",
+    deliveredCharacters: delivered.map((character) => character.name),
+  };
 }

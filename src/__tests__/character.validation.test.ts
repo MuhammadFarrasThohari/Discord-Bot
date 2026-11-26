@@ -7,16 +7,28 @@ import {
 } from "../modules/character/character.validation";
 
 describe("character validation schemas", () => {
-  it("normalizes and validates character add input", () => {
+  it("normalizes and validates character add input including required days", () => {
     const parsed = characterAddSchema.parse({
       name: "  Furina  ",
       danbooruTag: "  Furina_(Genshin_Impact) ",
+      days: " Mon, fri, SUN ",
     });
 
     expect(parsed).toEqual({
       name: "Furina",
       danbooruTag: "furina_(genshin_impact)",
+      days: ["mon", "fri", "sun"],
     });
+  });
+
+  it("rejects character add input when days are missing or invalid", () => {
+    const missingDays = characterAddSchema.safeParse({
+      name: "Furina",
+      danbooruTag: "furina_(genshin_impact)",
+      days: "",
+    });
+
+    expect(missingDays.success).toBe(false);
   });
 
   it("rejects invalid danbooru tag characters", () => {

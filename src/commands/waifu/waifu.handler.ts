@@ -33,8 +33,8 @@ export async function handleWaifuCommand(
       case "already-delivered":
         await interaction.editReply({
           content:
-            `You've already received your Daily Waifu today!\n\n` +
-            `[Jump to your artwork](${result.messageUrl})`,
+            `You've already received all of your Daily Waifu characters for today!\n\n` +
+            `[Jump to your latest artwork](${result.messageUrl})`,
         });
         return;
 
@@ -46,15 +46,20 @@ export async function handleWaifuCommand(
 
       case "no-artwork":
         await interaction.editReply(
-          "Sorry, no suitable artwork was found for your scheduled characters today.",
+          "Sorry, no suitable artwork was found for your remaining scheduled characters today.",
         );
         return;
 
-      case "delivered":
+      case "delivered": {
+        const names = result.deliveredCharacters
+          .map((name) => `**${name}**`)
+          .join(", ");
+
         await interaction.editReply(
-          "Your Daily Waifu has been delivered to the configured channel!",
+          `Your Daily Waifu (${names}) has been delivered to the configured channel!`,
         );
         return;
+      }
     }
   } catch (error) {
     if (error instanceof AppError) {
